@@ -38,12 +38,13 @@ const resolveValue = (value, variables) => {
 // Layout Mode to flex mapping
 const getLayoutStyles = (mode) => {
   switch (mode) {
-    case 'Top': return { display: 'flex', flexDirection: 'column', overflow: 'visible' };
-    case 'Left': return { display: 'flex', flexDirection: 'row', overflow: 'visible' };
+    case 'Top': return { display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'visible' };
+    case 'Bottom': return { display: 'flex', flexDirection: 'column-reverse', alignItems: 'center', overflow: 'visible' };
+    case 'Left': return { display: 'flex', flexDirection: 'row', alignItems: 'center', overflow: 'visible' };
     case 'Center': return { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' };
     case 'Middle': return { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'visible' };
-    case 'Right': return { display: 'flex', flexDirection: 'row-reverse', overflow: 'visible' };
-    case 'TopScrolling': return { display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' };
+    case 'Right': return { display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', overflow: 'visible' };
+    case 'TopScrolling': return { display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', overflowX: 'hidden' };
     case 'LeftCenterWrap': return { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', overflow: 'visible' };
     default: return { position: 'relative', overflow: 'visible' };
   }
@@ -955,7 +956,7 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
 };
 
 // --- Entry Point Wrapper with Logical Viewport Scaling ---
-export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, bgMode }) => {
+export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, bgMode, zoom = 1 }) => {
   const containerRef = useRef(null);
   const [autoScale, setAutoScale] = useState(1);
 
@@ -974,6 +975,7 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
   if (!element) return null;
 
   const bgImage = bgMode === 'ui' ? '/ScreenshotWithUI.png' : bgMode === 'clean' ? '/Screenshot.png' : null;
+  const finalScale = autoScale * zoom;
 
   return (
     <div 
@@ -987,8 +989,9 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
         style={{
           width: 1920,
           height: 1080,
-          transform: `scale(${autoScale})`,
+          transform: `scale(${finalScale})`,
           transformOrigin: 'center center',
+          transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
           flexShrink: 0,
           position: 'relative',
           backgroundColor: bgMode === 'flat' ? '#1a1d24' : 'black',
@@ -1003,7 +1006,7 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
             linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px),
             ${bgImage ? `url(${bgImage})` : 'none'}
           ` : (bgImage ? `url(${bgImage})` : 'none'),
-          backgroundSize: gridSettings.visible ? `${gridSettings.size}px ${gridSettings.size}px, cover` : 'cover',
+          backgroundSize: gridSettings.visible ? `${gridSettings.size}px ${gridSettings.size}px, ${gridSettings.size}px ${gridSettings.size}px, cover` : 'cover',
           border: '1px solid rgba(255,255,255,0.1)'
          }}
       >
@@ -1019,7 +1022,7 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
       
       {/* Zoom Indicator */}
       <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[10px] font-mono text-hytale-muted pointer-events-none select-none z-50">
-        RESOLUTION: 1920x1080 <span className="text-hytale-accent ml-2">@ {Math.round(autoScale * 100)}%</span>
+        RESOLUTION: 1920x1080 <span className="text-hytale-accent ml-2">ZOOM: {Math.round(finalScale * 100)}%</span>
       </div>
     </div>
   );

@@ -54,7 +54,8 @@ export class HytaleUISerializer {
 
     // Properties
     for (const [key, value] of Object.entries(el.properties || {})) {
-      ctx.output += `${nextIndent}${key}: ${this.serializeValue(value)};\n`;
+      const sep = key.startsWith('@') ? ' =' : ':';
+      ctx.output += `${nextIndent}${key}${sep} ${this.serializeValue(value)};\n`;
     }
 
     // Children
@@ -88,8 +89,10 @@ export class HytaleUISerializer {
       // References, colors, spreads — keep as-is
       if (/^[@$%#]/.test(value)) return value;
       if (/^\.\.\./.test(value)) return value;
-      // Bare identifiers (no spaces, pure alphanumeric+underscore) — don't quote
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) return value;
+      // Bare identifiers (keywords like True, False, Center, etc.)
+      const keywords = ['True', 'False', 'Null', 'Center', 'Middle', 'Top', 'Bottom', 'Left', 'Right', 'Start', 'End', 'Auto', 'Wrap', 'Vertical', 'Horizontal'];
+      if (keywords.includes(value)) return value;
+      // If it contains spaces or isn't a simple keyword/ref, quote it
       return `"${value}"`;
     }
     
@@ -268,8 +271,16 @@ class Tokenizer {
   }
 
   peek() {
+    return this.peekAt(0);
+  }
+
+  peekAt(n) {
     const oldPos = this.pos;
-    const token = this.nextToken();
+    let token = null;
+    for (let i = 0; i <= n; i++) {
+        token = this.nextToken();
+        if (token === null) break;
+    }
     this.pos = oldPos;
     return token;
   }
@@ -286,37 +297,44 @@ export class HytaleUIParser {
     let safetyCounter = 0;
     const maxIterations = 100000;
 
-    while ((token = tokenizer.nextToken())) {
+    while (true) {
+      token = tokenizer.peek();
+      if (!token) break;
+
       if (++safetyCounter > maxIterations) {
         console.error('Parser: max iterations exceeded at top level, pos:', tokenizer.pos);
         break;
       }
 
       if (token.type === 'REFERENCE') {
-        if (token.prefix === '$') {
-          // Import: $Name = "path";
-          const name = token.value;
-          const eq = tokenizer.peek();
-          if (eq && eq.value === '=') {
-            tokenizer.nextToken(); // =
+        // Is it an assignment? (@Var = ... or $Import = ...)
+        const next = tokenizer.peekAt(1);
+        const afterNext = tokenizer.peekAt(2);
+        
+        if (next?.type === 'PUNCTUATION' && next.value === '=') {
+          // It's a Variable or Import assignment
+          tokenizer.nextToken(); // consume prefix
+          tokenizer.nextToken(); // consume =
+          if (token.prefix === '$') {
             const pathToken = tokenizer.nextToken();
-            doc.imports[name] = pathToken.value;
+            doc.imports[token.value] = pathToken.value;
+            if (tokenizer.peek()?.value === ';') tokenizer.nextToken();
+          } else {
+            doc.variables[token.value] = this.parseValue(tokenizer);
             if (tokenizer.peek()?.value === ';') tokenizer.nextToken();
           }
-        } else if (token.prefix === '@') {
-          // Variable: @Name = value;
-          const name = token.value;
-          const eq = tokenizer.peek();
-          if (eq && eq.value === '=') {
-            tokenizer.nextToken(); // =
-            doc.variables[name] = this.parseValue(tokenizer);
-            if (tokenizer.peek()?.value === ';') tokenizer.nextToken();
-          }
+        } else {
+          // Not an assignment -> must be the root element!
+          doc.root = this.parseElement(tokenizer);
+          break; 
         }
-      } else if (token.type === 'IDENTIFIER') {
-        // Root element — rewind and parse
-        tokenizer.pos -= token.value.length;
+      } else if (token.type === 'IDENTIFIER' || token.type === 'HASH_ID') {
+        // Root element!
         doc.root = this.parseElement(tokenizer);
+        break;
+      } else {
+        // Skip unknown top-level tokens
+        tokenizer.nextToken();
       }
     }
 

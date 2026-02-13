@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PanelRight, Play, Save, FileCode, AlertCircle, Plus, Eye, Code, Trash2, ChevronDown, X, Undo2, Redo2 } from 'lucide-react';
+import { PanelRight, Play, Save, FileCode, AlertCircle, Plus, Eye, Code, Trash2, ChevronDown, X, Undo2, Redo2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEditorStore } from './lib/hytale-ui/store';
 import { TreeView } from './components/TreeView';
@@ -42,6 +42,7 @@ function App() {
     const selectedId = selectedIds[0] || null; // For single-element editors
   const [bgMode, setBgMode] = useState('ui');
   const [viewport, setViewport] = useState({ x: 0, y: 0 }); // Just pan
+  const [zoom, setZoom] = useState(1.0);
   const [isPanning, setIsPanning] = useState(false);
 
   const [leftPanelMode, setLeftPanelMode] = useState('hierarchy'); // 'hierarchy' | 'source'
@@ -54,6 +55,13 @@ function App() {
   const canvasRef = useRef(null);
   const viewportRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Zoom Handler
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(z => Math.max(0.1, Math.min(5, z * delta)));
+  };
 
   // Pan Handlers
   const handleViewportMouseDown = (e) => {
@@ -383,9 +391,12 @@ function App() {
         
         <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-hytale-bg/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-4">
-            <div className="flex flex-col">
+            <div className="flex flex-col relative">
                 <h1 className="font-black text-xl tracking-tighter italic text-white leading-none">HYTALE<span className="text-hytale-accent">UI</span></h1>
-                <span className="text-[10px] text-hytale-muted uppercase tracking-[0.3em] font-bold">Project Editor</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-hytale-muted uppercase tracking-[0.3em] font-bold">Project Editor</span>
+                  <span className="text-[7px] text-red-500 font-black px-1 py-0.5 border border-red-500/30 rounded bg-red-500/10 leading-none -mt-3 select-none">BETA</span>
+                </div>
             </div>
             <div className="h-4 w-px bg-white/10" />
             
@@ -466,6 +477,7 @@ function App() {
             onMouseUp={handleViewportMouseUp}
             onMouseLeave={handleViewportMouseUp}
             onContextMenu={handleContextMenu}
+            onWheel={handleWheel}
         >
             <div 
               style={{ 
@@ -483,12 +495,38 @@ function App() {
                     onSelect={toggleSelectedId}
                     onUpdate={updateElement}
                     bgMode={bgMode}
+                    zoom={zoom}
                 />
+            </div>
+
+            {/* Zoom Controls Overlay */}
+            <div className="absolute bottom-6 left-6 flex flex-col gap-2 z-50">
+                <button 
+                  onClick={() => setZoom(z => Math.min(5, z * 1.1))}
+                  className="w-10 h-10 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg flex items-center justify-center text-white/80 hover:bg-hytale-accent hover:text-black transition-all active:scale-95 shadow-lg group"
+                  title="Zoom In (Ctrl + Scroll Up)"
+                >
+                  <ZoomIn size={18} className="group-hover:scale-110 transition-transform" />
+                </button>
+                <button 
+                  onClick={() => setZoom(z => Math.max(0.1, z / 1.1))}
+                  className="w-10 h-10 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg flex items-center justify-center text-white/80 hover:bg-hytale-accent hover:text-black transition-all active:scale-95 shadow-lg group"
+                  title="Zoom Out (Ctrl + Scroll Down)"
+                >
+                  <ZoomOut size={18} className="group-hover:scale-110 transition-transform" />
+                </button>
+                <button 
+                  onClick={() => { setZoom(1); setViewport({ x: 0, y: 0 }); }}
+                  className="w-10 h-10 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg flex items-center justify-center text-white/80 hover:bg-white/20 transition-all active:scale-95 shadow-lg group"
+                  title="Reset View"
+                >
+                  <RotateCcw size={18} className="group-hover:rotate-[-90deg] transition-transform" />
+                </button>
             </div>
         </div>
 
         {/* Status Bar */}
-        <footer className="h-8 border-t border-white/10 bg-hytale-sidebar flex items-center px-4 justify-between">
+        <footer className="h-8 border-t border-white/10 bg-hytale-sidebar flex items-center px-4 justify-between select-none">
           <div className="flex items-center gap-3 text-[9px] text-hytale-muted font-bold uppercase tracking-widest">
              <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
@@ -497,7 +535,28 @@ function App() {
              <div className="w-px h-2 bg-white/10" />
              <span>Hytale Schema: 1.2.4</span>
           </div>
-          <div className="text-[9px] text-hytale-accent/40 font-mono tracking-widest">
+
+          {/* Navigation Controls Guide */}
+          <div className="flex items-center gap-4 text-[8px] text-white/40 font-bold uppercase tracking-[0.15em] border-x border-white/5 px-6">
+             <div className="flex items-center gap-1.5">
+                <span className="px-1 py-0.5 rounded border border-white/20 bg-white/5 text-white/60">RMB</span>
+                <span>+ Drag to Pan</span>
+             </div>
+             <div className="flex items-center gap-1.5">
+                <span className="px-1 py-0.5 rounded border border-white/20 bg-white/5 text-white/60">Scroll</span>
+                <span>to Zoom</span>
+             </div>
+             <div className="flex items-center gap-1.5">
+                <span className="px-1 py-0.5 rounded border border-white/20 bg-white/5 text-white/60">Click</span>
+                <span>to Select</span>
+             </div>
+             <div className="flex items-center gap-1.5">
+                <span className="px-1 py-0.5 rounded border border-white/20 bg-white/5 text-white/60">Shift</span>
+                <span>+ Click Multi-Select</span>
+             </div>
+          </div>
+
+          <div className="text-[9px] text-hytale-accent/40 font-mono tracking-widest overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px]">
             {selectedId ? `SELECTED: ${selectedId}` : 'IDLE'}
           </div>
         </footer>
