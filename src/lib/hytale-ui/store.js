@@ -44,8 +44,7 @@ const INITIAL_DOC = {
                     id: "StatusLabel",
                     properties: {
                         Style: "@HeaderStyle",
-                        Text: "Status: OK",
-                        Anchor: { Height: 30, Left: 0, Right: 0 }
+                        Text: "Status: OK"
                     },
                     children: []
                 }
@@ -263,5 +262,72 @@ export const useEditorStore = create((set, get) => ({
     });
   },
 
+  moveElement: (sourceKey, targetKey, mode = 'nest') => {
+    if (sourceKey === targetKey) return;
+    if (sourceKey === "Root") return;
+
+    get()._pushUndoImmediate();
+    set(state => {
+      const newDoc = JSON.parse(JSON.stringify(state.doc));
+      
+      // 1. Find and remove the source element
+      let sourceEl = null;
+      const removeSource = (node) => {
+        if (!node.children) return false;
+        const index = node.children.findIndex(c => getElementKey(c) === sourceKey);
+        if (index !== -1) {
+          sourceEl = node.children.splice(index, 1)[0];
+          return true;
+        }
+        for (const child of node.children) {
+          if (removeSource(child)) return true;
+        }
+        return false;
+      };
+      
+      removeSource(newDoc.root);
+      if (!sourceEl) return { doc: state.doc };
+
+      // 2. Determine target parent and index
+      let targetParent = null;
+      let targetIndex = 0;
+
+      if (mode === 'nest') {
+        targetParent = findElement(newDoc.root, targetKey);
+        if (targetParent) {
+          targetParent.children = targetParent.children || [];
+          targetIndex = targetParent.children.length;
+        }
+      } else {
+        // 'above' or 'below' - targetKey is the sibling. Find its parent.
+        const findParentOf = (node, key) => {
+          if (!node.children) return null;
+          if (node.children.some(c => getElementKey(c) === key)) return node;
+          for (const child of node.children) {
+            const found = findParentOf(child, key);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        targetParent = findParentOf(newDoc.root, targetKey);
+        if (targetParent) {
+          const siblingIndex = targetParent.children.findIndex(c => getElementKey(c) === targetKey);
+          targetIndex = mode === 'above' ? siblingIndex : siblingIndex + 1;
+        }
+      }
+
+      if (targetParent) {
+        targetParent.children.splice(targetIndex, 0, sourceEl);
+      } else {
+        // Fallback: re-add to root if logic fails
+        newDoc.root.children.push(sourceEl);
+      }
+
+      return { doc: newDoc, selectedIds: [sourceKey] };
+    });
+  },
+
   serialize: () => HytaleUISerializer.serialize(get().doc),
+  serializeWithOffsets: () => HytaleUISerializer.serialize(get().doc, { withOffsets: true }),
 }));

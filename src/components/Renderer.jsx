@@ -181,8 +181,9 @@ const SelectionOverlay = ({ elDiv, anchor, onUpdate, gridSettings = {} }) => {
     if (!elDiv) return;
 
     const elRect = elDiv.getBoundingClientRect();
-    const stage = elDiv.closest('div[style*="width: 1920"]');
-    const scale = stage ? stage.getBoundingClientRect().width / 1920 : 1;
+    const stage = elDiv.closest('[data-logical-stage]');
+    const stageRect = stage ? stage.getBoundingClientRect() : null;
+    const scale = stageRect ? stageRect.width / 1920 : 1;
 
     const initialAnchor = { ...anchor };
     // Always use logical pixels
@@ -198,8 +199,9 @@ const SelectionOverlay = ({ elDiv, anchor, onUpdate, gridSettings = {} }) => {
     const offsetY = e.clientY - elRect.top;
 
     const handleMouseMove = (moveEvent) => {
+      const currentStageRect = stage.getBoundingClientRect();
+      const currentScale = currentStageRect.width / 1920;
       let newAnchor = { ...initialAnchor };
-      const currentScale = stage ? stage.getBoundingClientRect().width / 1920 : 1;
 
       if (mode === 'move') {
         // Compute physical position relative to parent
@@ -953,24 +955,16 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
 };
 
 // --- Entry Point Wrapper with Logical Viewport Scaling ---
-export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, canvasRef }) => {
+export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, bgMode }) => {
   const containerRef = useRef(null);
-  const [scale, setScale] = useState(1);
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [autoScale, setAutoScale] = useState(1);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        setSize({ width, height });
-        // Target 1920x1080 logical resolution
-        const targetW = 1920;
-        const targetH = 1080;
-        const scaleW = width / targetW;
-        const scaleH = height / targetH;
-        // Zoom to fit (uniform scale)
-        setScale(Math.min(scaleW, scaleH));
+        setAutoScale(Math.min(width / 1920, height / 1080));
       }
     });
     observer.observe(containerRef.current);
@@ -979,31 +973,40 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
 
   if (!element) return null;
 
+  const bgImage = bgMode === 'ui' ? '/ScreenshotWithUI.png' : bgMode === 'clean' ? '/Screenshot.png' : null;
+
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full relative overflow-hidden flex items-center justify-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onSelect(null);
-      }}
+      className="w-full h-full relative overflow-visible flex items-center justify-center p-10"
+      onClick={(e) => { if (e.target === e.currentTarget) onSelect(null); }}
     >
       {/* Logical Viewport Stage */}
-      <div style={{
-        width: 1920,
-        height: 1080,
-        transform: `scale(${scale})`,
-        transformOrigin: 'center center',
-        flexShrink: 0,
-        position: 'relative',
-        boxShadow: '0 0 100px rgba(0,0,0,0.5)',
-        pointerEvents: 'auto',
-        // Grid Overlay
-        backgroundImage: gridSettings.visible ? `
-          linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
-        ` : 'none',
-        backgroundSize: gridSettings.visible ? `${gridSettings.size}px ${gridSettings.size}px` : 'auto',
-      }}>
+      <div 
+        data-logical-stage
+        style={{
+          width: 1920,
+          height: 1080,
+          transform: `scale(${autoScale})`,
+          transformOrigin: 'center center',
+          flexShrink: 0,
+          position: 'relative',
+          backgroundColor: bgMode === 'flat' ? '#1a1d24' : 'black',
+          backgroundImage: bgImage ? `url(${bgImage})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          boxShadow: '0 0 100px rgba(0,0,0,0.8)',
+          pointerEvents: 'auto',
+          // Grid Overlay
+          backgroundImage: gridSettings.visible ? `
+            linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px),
+            ${bgImage ? `url(${bgImage})` : 'none'}
+          ` : (bgImage ? `url(${bgImage})` : 'none'),
+          backgroundSize: gridSettings.visible ? `${gridSettings.size}px ${gridSettings.size}px, cover` : 'cover',
+          border: '1px solid rgba(255,255,255,0.1)'
+         }}
+      >
         <HytaleElement 
           element={element}
           variables={variables}
@@ -1015,8 +1018,8 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
       </div>
       
       {/* Zoom Indicator */}
-      <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[10px] font-mono text-hytale-muted pointer-events-none select-none">
-        VIEWPORT: 1920x1080 <span className="text-hytale-accent ml-2">@ {Math.round(scale * 100)}%</span>
+      <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[10px] font-mono text-hytale-muted pointer-events-none select-none z-50">
+        RESOLUTION: 1920x1080 <span className="text-hytale-accent ml-2">@ {Math.round(autoScale * 100)}%</span>
       </div>
     </div>
   );

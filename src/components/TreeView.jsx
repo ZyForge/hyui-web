@@ -10,7 +10,7 @@ const ElementIcon = ({ type }) => {
   return <Box className="w-3.5 h-3.5" />;
 };
 
-const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete }) => {
+const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete, onMove }) => {
   const elKey = el.id || el.__uid;
   const isSelected = selectedIds.includes(elKey);
   const isExpanded = expandedIds.has(elKey);
@@ -25,13 +25,73 @@ const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggl
     e.stopPropagation();
     onToggleExpand(elKey);
   };
+
+  // --- Drag & Drop Handlers ---
+  const [dropPosition, setDropPosition] = React.useState(null); // 'above' | 'below' | 'nest' | null
+
+  const handleDragStart = (e) => {
+    e.stopPropagation();
+    e.dataTransfer.setData('hytale/element-key', elKey);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    
+    if (elKey === "Root") {
+        setDropPosition('nest');
+        return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const height = rect.height;
+    
+    if (y < height * 0.25) setDropPosition('above');
+    else if (y > height * 0.75) setDropPosition('below');
+    else setDropPosition('nest');
+  };
+
+  const handleDragLeave = () => {
+    setDropPosition(null);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceKey = e.dataTransfer.getData('hytale/element-key');
+    const pos = dropPosition;
+    setDropPosition(null);
+
+    if (!sourceKey || sourceKey === elKey || !pos) return;
+    
+    // Find parent and index for sibling reordering
+    // For simplicity, we'll pass the intent to moveElement
+    // We need to know who the parent is to support 'above'/'below'
+    // This requires a minor tweak to how we call onMove
+    onMove(sourceKey, elKey, pos);
+  };
   
   return (
-    <div>
+    <div 
+      draggable={elKey !== "Root"}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="relative"
+    >
+      {/* Drop Indicators */}
+      {dropPosition === 'above' && <div className="absolute top-0 left-0 right-0 h-0.5 bg-hytale-accent z-10" />}
+      {dropPosition === 'below' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-hytale-accent z-10" />}
+      
       <div 
         className={clsx(
-          "flex items-center gap-2 px-2 py-1 cursor-pointer rounded-md transition-colors text-xs font-medium group",
-          isSelected ? "bg-hytale-accent text-black" : "hover:bg-white/5 text-hytale-text"
+          "flex items-center gap-2 px-2 py-1 cursor-pointer rounded-md transition-colors text-xs font-medium group relative",
+          isSelected ? "bg-hytale-accent text-black" : "hover:bg-white/5 text-hytale-text",
+          dropPosition === 'nest' && "bg-hytale-accent/20"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={handleItemClick}
@@ -61,6 +121,7 @@ const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggl
               onToggleSelect={onToggleSelect}
               onToggleExpand={onToggleExpand}
               onDelete={onDelete}
+              onMove={onMove}
             />
           ))}
         </div>
@@ -69,7 +130,7 @@ const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggl
   );
 };
 
-export const TreeView = ({ root, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete }) => {
+export const TreeView = ({ root, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete, onMove }) => {
   if (!root) return <div className="p-4 text-xs text-hytale-muted italic">No root element</div>;
 
   return (
@@ -82,6 +143,7 @@ export const TreeView = ({ root, selectedIds, expandedIds, onToggleSelect, onTog
         onToggleSelect={onToggleSelect} 
         onToggleExpand={onToggleExpand}
         onDelete={onDelete} 
+        onMove={onMove}
       />
     </div>
   );

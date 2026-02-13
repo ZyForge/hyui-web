@@ -11,53 +11,67 @@
  */
 
 export class HytaleUISerializer {
-  static serialize(doc) {
-    let output = '';
+  static serialize(doc, options = {}) {
+    const ctx = {
+      output: '',
+      offsets: {},
+      withOffsets: options.withOffsets || false
+    };
 
     // Imports
     const importKeys = Object.keys(doc.imports || {});
     for (const [name, path] of Object.entries(doc.imports || {})) {
-      output += `$${name} = "${path}";\n`;
+      ctx.output += `$${name} = "${path}";\n`;
     }
-    if (importKeys.length > 0) output += '\n';
+    if (importKeys.length > 0) ctx.output += '\n';
 
     // Variables
     const varKeys = Object.keys(doc.variables || {});
     for (const [name, value] of Object.entries(doc.variables || {})) {
-      output += `@${name} = ${this.serializeValue(value)};\n`;
+      ctx.output += `@${name} = ${this.serializeValue(value)};\n`;
     }
-    if (varKeys.length > 0) output += '\n';
+    if (varKeys.length > 0) ctx.output += '\n';
 
     // Root Element
     if (doc.root) {
-      output += this.serializeElement(doc.root, 0);
+      this.serializeElement(doc.root, 0, ctx);
     }
 
-    return output.trim();
+    const final = ctx.output.trim();
+    if (ctx.withOffsets) {
+      return { code: final, offsets: ctx.offsets };
+    }
+    return final;
   }
 
-  static serializeElement(el, indentLevel) {
+  static serializeElement(el, indentLevel, ctx) {
+    const start = ctx.output.length;
     const indent = '    '.repeat(indentLevel);
     let type = el.type;
-    let output = `${indent}${type}${el.id ? ' #' + el.id : ''} {\n`;
+    ctx.output += `${indent}${type}${el.id ? ' #' + el.id : ''} {\n`;
 
     const nextIndent = '    '.repeat(indentLevel + 1);
 
     // Properties
     for (const [key, value] of Object.entries(el.properties || {})) {
-      output += `${nextIndent}${key}: ${this.serializeValue(value)};\n`;
+      ctx.output += `${nextIndent}${key}: ${this.serializeValue(value)};\n`;
     }
 
     // Children
     if (el.children && el.children.length > 0) {
-      if (Object.keys(el.properties || {}).length > 0) output += '\n';
+      if (Object.keys(el.properties || {}).length > 0) ctx.output += '\n';
       for (const child of el.children) {
-        output += this.serializeElement(child, indentLevel + 1) + '\n';
+        this.serializeElement(child, indentLevel + 1, ctx);
+        ctx.output += '\n';
       }
     }
 
-    output += `${indent}}`;
-    return output;
+    ctx.output += `${indent}}`;
+    
+    if (ctx.withOffsets) {
+      const key = el.id || el.__uid;
+      if (key) ctx.offsets[key] = { start, end: ctx.output.length };
+    }
   }
 
   static serializeValue(value) {

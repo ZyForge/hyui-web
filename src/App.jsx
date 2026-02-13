@@ -5,6 +5,7 @@ import { useEditorStore } from './lib/hytale-ui/store';
 import { TreeView } from './components/TreeView';
 import { PropertyEditor } from './components/PropertyEditor';
 import { HytaleRenderer } from './components/Renderer';
+import { SourceEditor } from './components/SourceEditor';
 
 import { HytaleUIParser } from './lib/hytale-ui/parser';
 
@@ -35,18 +36,51 @@ function App() {
     const { 
         doc, selectedIds, expandedIds, gridSettings,
         setFullDoc, toggleSelectedId, toggleExpandedId, setGridSettings,
-        updateElement, addElement, deleteElement, serialize, loadHytaleData, undo, redo, _undoStack, _redoStack
+        updateElement, addElement, deleteElement, moveElement, serialize, serializeWithOffsets, loadHytaleData, undo, redo, _undoStack, _redoStack
     } = useEditorStore();
 
     const selectedId = selectedIds[0] || null; // For single-element editors
   const [bgMode, setBgMode] = useState('ui');
+  const [viewport, setViewport] = useState({ x: 0, y: 0 }); // Just pan
+  const [isPanning, setIsPanning] = useState(false);
+
   const [leftPanelMode, setLeftPanelMode] = useState('hierarchy'); // 'hierarchy' | 'source'
   const [addDropdownOpen, setAddDropdownOpen] = useState(false);
   const [sourceText, setSourceText] = useState('');
+  const [sourceOffsets, setSourceOffsets] = useState({});
   const [sourceError, setSourceError] = useState(null);
+  const sourceRef = useRef(null);
   const addBtnRef = useRef(null);
   const canvasRef = useRef(null);
+  const viewportRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Pan Handlers
+  const handleViewportMouseDown = (e) => {
+    // 2 is right click
+    if (e.button === 2) {
+        setIsPanning(true);
+        e.preventDefault();
+    }
+  };
+
+  const handleViewportMouseMove = (e) => {
+    if (isPanning) {
+        setViewport(v => ({
+            ...v,
+            x: v.x + e.movementX,
+            y: v.y + e.movementY
+        }));
+    }
+  };
+
+  const handleViewportMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault(); // Disable right-click menu for panning
+  };
 
   useEffect(() => {
     loadHytaleData();
@@ -80,10 +114,12 @@ function App() {
   // Sync source text when switching to Source tab or when doc changes
   useEffect(() => {
     if (leftPanelMode === 'source') {
-      setSourceText(serialize());
+      const result = serializeWithOffsets();
+      setSourceText(result.code);
+      setSourceOffsets(result.offsets);
       setSourceError(null);
     }
-  }, [leftPanelMode, doc, serialize]);
+  }, [leftPanelMode, doc, serializeWithOffsets]);
 
   const handleImport = () => {
     if (fileInputRef.current) {
@@ -324,25 +360,17 @@ function App() {
                 onToggleSelect={toggleSelectedId} 
                 onToggleExpand={toggleExpandedId}
                 onDelete={deleteElement} 
+                onMove={moveElement}
               />
            ) : (
-              <div className="flex flex-col h-full gap-2">
-                <textarea
-                  value={sourceText}
-                  onChange={(e) => setSourceText(e.target.value)}
-                  spellCheck={false}
-                  className="flex-1 w-full bg-black/40 border border-white/10 rounded p-3 font-mono text-[11px] text-hytale-accent/80 resize-none outline-none focus:border-hytale-accent/30 transition-all custom-scrollbar leading-relaxed"
-                  placeholder="// Paste or edit .ui source here..."
+              <div className="flex flex-col h-full">
+                <SourceEditor 
+                   code={sourceText}
+                   offsets={sourceOffsets}
+                   selectedIds={selectedIds}
+                   onChange={setSourceText}
+                   onApply={handleSourceApply}
                 />
-                {sourceError && (
-                  <div className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{sourceError}</div>
-                )}
-                <button
-                  onClick={handleSourceApply}
-                  className="px-3 py-2 bg-hytale-accent text-black text-[10px] font-black uppercase tracking-widest rounded hover:bg-hytale-accent/90 transition-all active:scale-95"
-                >
-                  Apply Changes
-                </button>
               </div>
            )}
         </div>
@@ -430,45 +458,32 @@ function App() {
         </header>
         
         {/* Canvas viewport — overflow hidden, no scrollbars */}
-        <div className="flex-1 overflow-hidden relative">
+        <div 
+            ref={viewportRef}
+            className="flex-1 overflow-hidden relative cursor-all-scroll bg-[#050608]"
+            onMouseDown={handleViewportMouseDown}
+            onMouseMove={handleViewportMouseMove}
+            onMouseUp={handleViewportMouseUp}
+            onMouseLeave={handleViewportMouseUp}
+            onContextMenu={handleContextMenu}
+        >
             <div 
-              ref={canvasRef}
-              className="absolute inset-0 flex items-center justify-center"
-              style={{ overflow: 'hidden' }}
+              style={{ 
+                  position: 'absolute',
+                  inset: 0,
+                  transform: `translate(${viewport.x}px, ${viewport.y}px)`,
+                  transition: isPanning ? 'none' : 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'
+              }}
             >
-                <div 
-                  data-canvas
-                  className="relative w-[1280px] h-[720px] border border-white/5 overflow-hidden flex items-center justify-center transition-all duration-500"
-                  style={{
-                      backgroundColor: bgMode === 'flat' ? '#1a1d24' : 'black',
-                      backgroundImage: bgMode !== 'flat' ? `url(${bgMode === 'ui' ? '/ScreenshotWithUI.png' : '/Screenshot.png'})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
-                  }}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                >
-                    <div className="absolute top-4 left-6 text-[10px] font-bold text-white/50 uppercase tracking-[0.5em] drop-shadow-md">Viewport :: Live</div>
-                    <div 
-                      className="w-full h-full relative z-10"
-                      onClick={(e) => {
-                        // Click on canvas background deselects
-                        if (e.target === e.currentTarget) toggleSelectedId(null);
-                      }}
-                    >
-                      <HytaleRenderer 
-                          element={doc.root} 
-                          variables={doc.variables}
-                          selectedIds={selectedIds}
-                          gridSettings={gridSettings}
-                          onSelect={toggleSelectedId}
-                          onUpdate={updateElement}
-                          canvasRef={canvasRef}
-                      />
-                    </div>
-                    {/* Overlay removed to fix "darker background" issue */}
-                    {false && <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>}
-                </div>
+                <HytaleRenderer 
+                    element={doc.root} 
+                    variables={doc.variables}
+                    selectedIds={selectedIds}
+                    gridSettings={gridSettings}
+                    onSelect={toggleSelectedId}
+                    onUpdate={updateElement}
+                    bgMode={bgMode}
+                />
             </div>
         </div>
 
