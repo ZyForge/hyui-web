@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --hytale-bg: #0d0e11;
+  --hytale-sidebar: #15181e;
+  --hytale-accent: #4cc9f0;
+  --hytale-accent-rgb: 76, 201, 240;
+  --hytale-text: #e0e6ed;
+  --hytale-muted: #94a3b8;
+}
+
+@layer base {
+  body {
+    @apply bg-[#0d0e11] text-[#e0e6ed] antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@keyframes glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}

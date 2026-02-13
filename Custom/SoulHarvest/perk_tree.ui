@@ -1,0 +1,431 @@
+@BranchTitleStyle = LabelStyle(
+  FontSize: 12,
+  TextColor: #f6c453,
+  RenderUppercase: true,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@NodeNameStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #b0b9c7,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center,
+  Wrap: true
+);
+
+@NodeLevelStyle = LabelStyle(
+  FontSize: 9,
+  TextColor: #7a88a0,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@NodeButtonStyle = TextButtonStyle(
+  Default: (Background: #1a1f29),
+  Hovered: (Background: #242b38),
+  Pressed: (Background: #151a22),
+  Disabled: (Background: #0f131a)
+);
+
+Group {
+  LayoutMode: Top;
+  Background: #141821;
+  Padding: (Full: 8);
+  Anchor: (Width: 260, Height: 520);
+
+  Label #BranchTitle {
+    Style: @BranchTitleStyle;
+    Text: "Branch Name";
+    Anchor: (Height: 18);
+  }
+
+  Group #BranchDivider {
+    Anchor: (Height: 1);
+    Background: #2d323e;
+    Padding: (Bottom: 8);
+  }
+
+  Group #Tier5 {
+    LayoutMode: Right;
+    Anchor: (Height: 72);
+    Padding: (Top: 6);
+
+    Group #ApexLeft {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #TreeNode {
+        LayoutMode: Top;
+        Anchor: (Width: 96, Height: 70);
+
+        Group #IconFrame {
+          Anchor: (Width: 50, Height: 50);
+          LayoutMode: Center;
+          Padding: (Full: 2);
+          Background: #2d323e;
+
+          TextButton #PerkBtn {
+            Style: @NodeButtonStyle;
+            Anchor: (Width: 46, Height: 46);
+            Text: "";
+          }
+        }
+
+        Label #PerkName {
+          Style: @NodeNameStyle;
+          Text: "Apex L";
+          Anchor: (Height: 14);
+        }
+
+        Label #PerkLevel {
+          Style: @NodeLevelStyle;
+          Text: "0/3";
+          Anchor: (Height: 10);
+        }
+      }
+    }
+
+    Group #ApexRight {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #TreeNode {
+        LayoutMode: Top;
+        Anchor: (Width: 96, Height: 70);
+
+        Group #IconFrame {
+          Anchor: (Width: 50, Height: 50);
+          LayoutMode: Center;
+          Padding: (Full: 2);
+          Background: #2d323e;
+
+          TextButton #PerkBtn {
+            Style: @NodeButtonStyle;
+            Anchor: (Width: 46, Height: 46);
+            Text: "";
+          }
+        }
+
+        Label #PerkName {
+          Style: @NodeNameStyle;
+          Text: "Apex R";
+          Anchor: (Height: 14);
+        }
+
+        Label #PerkLevel {
+          Style: @NodeLevelStyle;
+          Text: "0/3";
+          Anchor: (Height: 10);
+        }
+      }
+    }
+  }
+
+  Group #LineTier5 {
+    LayoutMode: Right;
+    Anchor: (Height: 8);
+
+    Group #LineApexLeft {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #LineApexLeftDown {
+        Anchor: (Width: 2, Height: 8);
+        Background: #2d323e;
+      }
+    }
+
+    Group #LineApexRight {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #LineApexRightDown {
+        Anchor: (Width: 2, Height: 8);
+        Background: #2d323e;
+      }
+    }
+  }
+
+  Group #Tier4 {
+    LayoutMode: Right;
+    Anchor: (Height: 72);
+
+    Group #MasteryLeft {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #TreeNode {
+        LayoutMode: Top;
+        Anchor: (Width: 96, Height: 70);
+
+        Group #IconFrame {
+          Anchor: (Width: 50, Height: 50);
+          LayoutMode: Center;
+          Padding: (Full: 2);
+          Background: #2d323e;
+
+          TextButton #PerkBtn {
+            Style: @NodeButtonStyle;
+            Anchor: (Width: 46, Height: 46);
+            Text: "";
+          }
+        }
+
+        Label #PerkName {
+          Style: @NodeNameStyle;
+          Text: "Mastery L";
+          Anchor: (Height: 14);
+        }
+
+        Label #PerkLevel {
+          Style: @NodeLevelStyle;
+          Text: "0/3";
+          Anchor: (Height: 10);
+        }
+      }
+    }
+
+    Group #MasteryRight {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #TreeNode {
+        LayoutMode: Top;
+        Anchor: (Width: 96, Height: 70);
+
+        Group #IconFrame {
+          Anchor: (Width: 50, Height: 50);
+          LayoutMode: Center;
+          Padding: (Full: 2);
+          Background: #2d323e;
+
+          TextButton #PerkBtn {
+            Style: @NodeButtonStyle;
+            Anchor: (Width: 46, Height: 46);
+            Text: "";
+          }
+        }
+
+        Label #PerkName {
+          Style: @NodeNameStyle;
+          Text: "Mastery R";
+          Anchor: (Height: 14);
+        }
+
+        Label #PerkLevel {
+          Style: @NodeLevelStyle;
+          Text: "0/3";
+          Anchor: (Height: 10);
+        }
+      }
+    }
+  }
+
+  Group #LineTier4 {
+    LayoutMode: Right;
+    Anchor: (Height: 8);
+
+    Group #LineMasteryLeft {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #LineMasteryLeftDown {
+        Anchor: (Width: 2, Height: 8);
+        Background: #2d323e;
+      }
+    }
+
+    Group #LineMasteryRight {
+      FlexWeight: 1;
+      LayoutMode: Center;
+
+      Group #LineMasteryRightDown {
+        Anchor: (Width: 2, Height: 8);
+        Background: #2d323e;
+      }
+    }
+  }
+
+  Group #ForkRow {
+    LayoutMode: Center;
+    Anchor: (Height: 14);
+
+    Label #ForkLabel {
+      Style: (FontSize: 9, TextColor: #ffaa00, RenderUppercase: true, HorizontalAlignment: Center);
+      Text: "FORK";
+    }
+  }
+
+  Group #ForkLines {
+    LayoutMode: Top;
+    Anchor: (Height: 12);
+
+    Group #ForkLineRow {
+      LayoutMode: Center;
+      Anchor: (Height: 2);
+
+      Group #LineForkLeft {
+        Anchor: (Width: 60, Height: 2);
+        Background: #2d323e;
+      }
+      Group #LineForkRight {
+        Anchor: (Width: 60, Height: 2);
+        Background: #2d323e;
+      }
+    }
+
+    Group #ForkLineDown {
+      LayoutMode: Center;
+      Anchor: (Height: 10);
+
+      Group #LineForkDown {
+        Anchor: (Width: 2, Height: 10);
+        Background: #2d323e;
+      }
+    }
+  }
+
+  Group #Tier3 {
+    LayoutMode: Center;
+    Anchor: (Height: 72);
+
+    Group #Divergence {
+      LayoutMode: Center;
+
+      Group #TreeNode {
+        LayoutMode: Top;
+        Anchor: (Width: 110, Height: 70);
+
+        Group #IconFrame {
+          Anchor: (Width: 50, Height: 50);
+          LayoutMode: Center;
+          Padding: (Full: 2);
+          Background: #2d323e;
+
+          TextButton #PerkBtn {
+            Style: @NodeButtonStyle;
+            Anchor: (Width: 46, Height: 46);
+            Text: "";
+          }
+        }
+
+        Label #PerkName {
+          Style: @NodeNameStyle;
+          Text: "Divergence";
+          Anchor: (Height: 14);
+        }
+
+        Label #PerkLevel {
+          Style: @NodeLevelStyle;
+          Text: "0/3";
+          Anchor: (Height: 10);
+        }
+      }
+    }
+  }
+
+  Group #LineTier3 {
+    LayoutMode: Center;
+    Anchor: (Height: 8);
+
+    Group #LineDivergenceDown {
+      Anchor: (Width: 2, Height: 8);
+      Background: #2d323e;
+    }
+  }
+
+  Group #Tier2 {
+    LayoutMode: Center;
+    Anchor: (Height: 72);
+
+    Group #Formation {
+      LayoutMode: Center;
+
+      Group #TreeNode {
+        LayoutMode: Top;
+        Anchor: (Width: 110, Height: 70);
+
+        Group #IconFrame {
+          Anchor: (Width: 50, Height: 50);
+          LayoutMode: Center;
+          Padding: (Full: 2);
+          Background: #2d323e;
+
+          TextButton #PerkBtn {
+            Style: @NodeButtonStyle;
+            Anchor: (Width: 46, Height: 46);
+            Text: "";
+          }
+        }
+
+        Label #PerkName {
+          Style: @NodeNameStyle;
+          Text: "Formation";
+          Anchor: (Height: 14);
+        }
+
+        Label #PerkLevel {
+          Style: @NodeLevelStyle;
+          Text: "0/3";
+          Anchor: (Height: 10);
+        }
+      }
+    }
+  }
+
+  Group #LineTier2 {
+    LayoutMode: Center;
+    Anchor: (Height: 8);
+
+    Group #LineFormationDown {
+      Anchor: (Width: 2, Height: 8);
+      Background: #2d323e;
+    }
+  }
+
+  Group #Tier1 {
+    LayoutMode: Center;
+    Anchor: (Height: 72);
+
+    Group #Root {
+      LayoutMode: Center;
+
+      Group #TreeNode {
+        LayoutMode: Top;
+        Anchor: (Width: 110, Height: 70);
+
+        Group #IconFrame {
+          Anchor: (Width: 50, Height: 50);
+          LayoutMode: Center;
+          Padding: (Full: 2);
+          Background: #2d323e;
+
+          TextButton #PerkBtn {
+            Style: @NodeButtonStyle;
+            Anchor: (Width: 46, Height: 46);
+            Text: "";
+          }
+        }
+
+        Label #PerkName {
+          Style: @NodeNameStyle;
+          Text: "Root";
+          Anchor: (Height: 14);
+        }
+
+        Label #PerkLevel {
+          Style: @NodeLevelStyle;
+          Text: "0/3";
+          Anchor: (Height: 10);
+        }
+      }
+    }
+  }
+
+  Label #StartHint {
+    Style: (FontSize: 9, TextColor: #5f6b7a, RenderUppercase: true, HorizontalAlignment: Center);
+    Text: "START HERE";
+    Anchor: (Height: 12);
+  }
+}

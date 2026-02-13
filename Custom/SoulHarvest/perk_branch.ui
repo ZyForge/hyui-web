@@ -1,0 +1,24 @@
+Group {
+  LayoutMode: Top;
+  Background: #2a2a2a;
+  Padding: (Top: 2);
+  Anchor: (Width: 350, Height: 240);
+
+  Label #BranchTitle {
+    Style: (FontSize: 16, TextColor: #b4c8c9, HorizontalAlignment: Start);
+    Text: "Branch Name";
+    Anchor: (Height: 30);
+  }
+
+  Group #BranchSeparator {
+    Anchor: (Height: 1);
+    Background: #2d323e;
+    Padding: (Top: 2);
+  }
+
+  Group #PerkList {
+    LayoutMode: TopScrolling;
+    Padding: (Right: 5);
+    FlexWeight: 1;
+  }
+}

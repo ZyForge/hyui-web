@@ -1,0 +1,574 @@
+@NavLabelStyle = LabelStyle(
+  FontSize: 12,
+  TextColor: #9aa7b8,
+  RenderUppercase: true,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@NavDisabledLabelStyle = LabelStyle(
+  ...@NavLabelStyle,
+  TextColor: #4f5966
+);
+
+@NavVigorLabelStyle = LabelStyle(
+  ...@NavLabelStyle,
+  TextColor: #F87171
+);
+
+@NavMightLabelStyle = LabelStyle(
+  ...@NavLabelStyle,
+  TextColor: #F59E0B
+);
+
+@NavInsightLabelStyle = LabelStyle(
+  ...@NavLabelStyle,
+  TextColor: #22D3EE
+);
+
+@NavReflexLabelStyle = LabelStyle(
+  ...@NavLabelStyle,
+  TextColor: #34D399
+);
+
+@NavPresenceLabelStyle = LabelStyle(
+  ...@NavLabelStyle,
+  TextColor: #C084FC
+);
+
+@NavButtonStyle = TextButtonStyle(
+  Default: (Background: #0f1218, LabelStyle: @NavLabelStyle),
+  Hovered: (Background: #151a23, LabelStyle: @NavLabelStyle),
+  Pressed: (Background: #0b0f15, LabelStyle: @NavLabelStyle),
+  Disabled: (Background: #0b0f15, LabelStyle: @NavDisabledLabelStyle)
+);
+
+@NavVigorButtonStyle = TextButtonStyle(
+  Default: (Background: #0f1218, LabelStyle: @NavVigorLabelStyle),
+  Hovered: (Background: #151a23, LabelStyle: @NavVigorLabelStyle),
+  Pressed: (Background: #0b0f15, LabelStyle: @NavVigorLabelStyle),
+  Disabled: (Background: #0b0f15, LabelStyle: @NavDisabledLabelStyle)
+);
+
+@NavMightButtonStyle = TextButtonStyle(
+  Default: (Background: #0f1218, LabelStyle: @NavMightLabelStyle),
+  Hovered: (Background: #151a23, LabelStyle: @NavMightLabelStyle),
+  Pressed: (Background: #0b0f15, LabelStyle: @NavMightLabelStyle),
+  Disabled: (Background: #0b0f15, LabelStyle: @NavDisabledLabelStyle)
+);
+
+@NavInsightButtonStyle = TextButtonStyle(
+  Default: (Background: #0f1218, LabelStyle: @NavInsightLabelStyle),
+  Hovered: (Background: #151a23, LabelStyle: @NavInsightLabelStyle),
+  Pressed: (Background: #0b0f15, LabelStyle: @NavInsightLabelStyle),
+  Disabled: (Background: #0b0f15, LabelStyle: @NavDisabledLabelStyle)
+);
+
+@NavReflexButtonStyle = TextButtonStyle(
+  Default: (Background: #0f1218, LabelStyle: @NavReflexLabelStyle),
+  Hovered: (Background: #151a23, LabelStyle: @NavReflexLabelStyle),
+  Pressed: (Background: #0b0f15, LabelStyle: @NavReflexLabelStyle),
+  Disabled: (Background: #0b0f15, LabelStyle: @NavDisabledLabelStyle)
+);
+
+@NavPresenceButtonStyle = TextButtonStyle(
+  Default: (Background: #0f1218, LabelStyle: @NavPresenceLabelStyle),
+  Hovered: (Background: #151a23, LabelStyle: @NavPresenceLabelStyle),
+  Pressed: (Background: #0b0f15, LabelStyle: @NavPresenceLabelStyle),
+  Disabled: (Background: #0b0f15, LabelStyle: @NavDisabledLabelStyle)
+);
+
+@SectionTitleStyle = LabelStyle(
+  FontSize: 13,
+  TextColor: #9aa7b8,
+  RenderUppercase: true,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center
+);
+
+@SubtleStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #7a889b,
+  RenderUppercase: true,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center
+);
+
+@TranscendLabelStyle = LabelStyle(
+  FontSize: 12,
+  TextColor: #f6c453,
+  RenderUppercase: true,
+  RenderBold: true,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@TranscendDisabledLabelStyle = LabelStyle(
+  ...@TranscendLabelStyle,
+  TextColor: #4f5966
+);
+
+@TranscendButtonStyle = TextButtonStyle(
+  Default: (Background: #2a2012, LabelStyle: @TranscendLabelStyle),
+  Hovered: (Background: #352814, LabelStyle: @TranscendLabelStyle),
+  Pressed: (Background: #241a0e, LabelStyle: @TranscendLabelStyle),
+  Disabled: (Background: #14110b, LabelStyle: @TranscendDisabledLabelStyle)
+);
+
+@PerkPanelTitleStyle = LabelStyle(
+  FontSize: 13,
+  TextColor: #e6edf3,
+  RenderUppercase: true,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center
+);
+
+@PerkPanelBranchStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #9aa7b8,
+  RenderUppercase: true,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center
+);
+
+@PerkPanelLevelStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #7a88a0,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center
+);
+
+@PerkPanelFlavorStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #7a88a0,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center,
+  Wrap: true
+);
+
+@PerkPanelDescStyle = LabelStyle(
+  FontSize: 11,
+  TextColor: #cbd5e1,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Start,
+  Wrap: true
+);
+
+@PerkPanelReqStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #f6c453,
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center,
+  Wrap: true
+);
+
+@UpgradeLabelStyle = LabelStyle(
+  FontSize: 12,
+  TextColor: #0f1115,
+  RenderUppercase: true,
+  RenderBold: true,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@UpgradeButtonStyle = TextButtonStyle(
+  Default: (Background: #f6c453, LabelStyle: @UpgradeLabelStyle),
+  Hovered: (Background: #ffcf66, LabelStyle: @UpgradeLabelStyle),
+  Pressed: (Background: #d9aa3d, LabelStyle: @UpgradeLabelStyle),
+  Disabled: (Background: #2a2012, LabelStyle: @UpgradeLabelStyle)
+);
+
+@TooltipCloseLabelStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #9aa7b8,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@TooltipCloseButtonStyle = TextButtonStyle(
+  Default: (Background: #1a1f29, LabelStyle: @TooltipCloseLabelStyle),
+  Hovered: (Background: #242b38, LabelStyle: @TooltipCloseLabelStyle),
+  Pressed: (Background: #151a22, LabelStyle: @TooltipCloseLabelStyle),
+  Disabled: (Background: #0f131a, LabelStyle: @TooltipCloseLabelStyle)
+);
+
+Group #Overlay {
+  Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+  Background: #000000(0.55);
+  LayoutMode: Center;
+
+  Group #Frame {
+    Anchor: (Width: 1700, Height: 900);
+    Background: #2d323e;
+    Padding: (Full: 1);
+
+    Group #Window {
+      Anchor: (Width: 1698, Height: 898);
+      Background: #0f1115;
+      LayoutMode: Top;
+
+      Group #HeaderBar {
+        LayoutMode: Right;
+        Anchor: (Height: 64);
+        Padding: (Left: 18, Right: 18, Top: 12, Bottom: 12);
+        Background: #13161c;
+
+        Group #HeaderLeft {
+          LayoutMode: Right;
+          Anchor: (Width: 260, Height: 40);
+          Padding: (Right: 8);
+
+          Label #TitleIcon {
+            Style: (FontSize: 16, TextColor: #d39b2a, HorizontalAlignment: Center, VerticalAlignment: Center);
+            Text: "[]";
+            Anchor: (Width: 22, Height: 22);
+          }
+
+          Group {
+            LayoutMode: Top;
+            FlexWeight: 1;
+            Padding: (Left: 8);
+
+            Label #TitleText {
+              Style: (FontSize: 18, TextColor: #e6edf3, HorizontalAlignment: Start);
+              Text: "SOUL ARBOR";
+              Anchor: (Height: 20);
+            }
+
+            Label #SubtitleText {
+              Style: (FontSize: 10, TextColor: #7a869a, HorizontalAlignment: Start);
+              Text: "PROGRESSION MATRIX";
+              Anchor: (Height: 12);
+            }
+          }
+        }
+
+        Group #HeaderTabs {
+          LayoutMode: Center;
+          FlexWeight: 1;
+          Padding: (Left: 8, Right: 8);
+
+          TextButton #VigorBtn {
+            Style: @NavVigorButtonStyle;
+            Text: "VIGOR";
+            Anchor: (Width: 96, Height: 30);
+            Padding: (Right: 6);
+          }
+          TextButton #MightBtn {
+            Style: @NavMightButtonStyle;
+            Text: "MIGHT";
+            Anchor: (Width: 96, Height: 30);
+            Padding: (Right: 6);
+          }
+          TextButton #InsightBtn {
+            Style: @NavInsightButtonStyle;
+            Text: "INSIGHT";
+            Anchor: (Width: 96, Height: 30);
+            Padding: (Right: 6);
+          }
+          TextButton #ReflexBtn {
+            Style: @NavReflexButtonStyle;
+            Text: "REFLEX";
+            Anchor: (Width: 96, Height: 30);
+            Padding: (Right: 6);
+          }
+          TextButton #PresenceBtn {
+            Style: @NavPresenceButtonStyle;
+            Text: "PRESENCE";
+            Anchor: (Width: 104, Height: 30);
+          }
+        }
+
+        Group #HeaderRight {
+          LayoutMode: Right;
+          Anchor: (Width: 220, Height: 40);
+          Padding: (Left: 8);
+
+          Label #AnchorStatus {
+            Style: (FontSize: 11, TextColor: #5bd6a2, HorizontalAlignment: End, VerticalAlignment: Center);
+            Text: "ANCHORED";
+            Anchor: (Width: 110, Height: 18);
+            Padding: (Right: 8);
+          }
+
+          Label #CloseHint {
+            Style: (FontSize: 11, TextColor: #6b7280, HorizontalAlignment: End, VerticalAlignment: Center);
+            Text: "X";
+            Anchor: (Width: 16, Height: 18);
+          }
+        }
+      }
+
+      Group #Body {
+        LayoutMode: Right;
+        FlexWeight: 1;
+
+        Group #Sidebar {
+          LayoutMode: Top;
+          Anchor: (Width: 270, Bottom: 0, Top: 0);
+          Padding: (Full: 14);
+          Background: #0d1016;
+
+          Label #SidebarTitle {
+            Style: @SectionTitleStyle;
+            Text: "SOUL CORE";
+            Anchor: (Height: 20);
+          }
+
+          Group #PointsCard {
+            LayoutMode: Top;
+            Anchor: (Width: 242, Height: 62);
+            Padding: (Full: 10);
+            Background: #131722;
+
+            Label #PointsLabel {
+              Style: (FontSize: 20, TextColor: #f6c453, HorizontalAlignment: Start);
+              Text: "Points: 0";
+              Anchor: (Height: 24);
+            }
+
+            Label #PointsSub {
+              Style: @SubtleStyle;
+              Text: "REFINED WILL";
+              Anchor: (Height: 12);
+            }
+          }
+
+          Group #EssenceCard {
+            LayoutMode: Top;
+            Anchor: (Width: 242, Height: 58);
+            Padding: (Full: 10);
+            Background: #12161f;
+
+            Label #EssenceLabel {
+              Style: (FontSize: 15, TextColor: #b0b9c7, HorizontalAlignment: Start);
+              Text: "Essence: 0";
+              Anchor: (Height: 20);
+            }
+
+            Label #EssenceSub {
+              Style: @SubtleStyle;
+              Text: "RAW ESSENCE";
+              Anchor: (Height: 12);
+            }
+          }
+
+          Group #TranscendCard {
+            LayoutMode: Top;
+            Anchor: (Width: 242, Height: 86);
+            Padding: (Full: 8);
+            Background: #11141c;
+
+            TextButton #TranscendBtn {
+              Style: @TranscendButtonStyle;
+              Text: "TRANSCEND";
+              Anchor: (Width: 226, Height: 30);
+            }
+
+            Group #TranscendInfoRow {
+              LayoutMode: Right;
+              Anchor: (Height: 14);
+              Padding: (Top: 6);
+
+              Label #TranscendCost {
+                Style: (FontSize: 10, TextColor: #7a869a, HorizontalAlignment: Start);
+                Text: "Cost: 25 Essence";
+                FlexWeight: 1;
+              }
+
+              Label #TranscendReward {
+                Style: (FontSize: 10, TextColor: #7a869a, HorizontalAlignment: End);
+                Text: "+1 Soul Point";
+                Anchor: (Width: 130);
+              }
+            }
+          }
+
+          Group #StrainCard {
+            LayoutMode: Top;
+            Anchor: (Width: 242, Height: 78);
+            Padding: (Full: 10);
+            Background: #10141b;
+
+            Label #StrainHeader {
+              Style: @SectionTitleStyle;
+              Text: "SOUL STRAIN";
+              Anchor: (Height: 16);
+            }
+
+            Label #DissonanceLabel {
+              Style: (FontSize: 11, TextColor: #ff6b6b, HorizontalAlignment: Start);
+              Text: "Dissonance: 0.0%";
+              Anchor: (Height: 16);
+            }
+
+            Label #ExposureLabel {
+              Style: (FontSize: 11, TextColor: #ffa500, HorizontalAlignment: Start);
+              Text: "Exposure: 0.0%";
+              Anchor: (Height: 16);
+            }
+          }
+        }
+
+        Group #MainArea {
+          LayoutMode: Top;
+          FlexWeight: 1;
+          Padding: (Full: 14);
+
+          Group #ManifestationHeader {
+            LayoutMode: Right;
+            Anchor: (Height: 90);
+
+            Group #ManifestationInfo {
+              LayoutMode: Top;
+              FlexWeight: 1;
+
+              Label #ManifestationTitle {
+                Style: (FontSize: 24, TextColor: #e6edf3, HorizontalAlignment: Start);
+                Text: "Vigor";
+                Anchor: (Height: 28);
+              }
+
+              Label #ManifestationFlavor {
+                Style: (FontSize: 12, TextColor: #7a88a0, HorizontalAlignment: Start);
+                Text: "The Will to Persist. Focuses on Survival, Health, and Resistance.";
+                Anchor: (Height: 16);
+              }
+
+              Label #CommitLabel {
+                Style: (FontSize: 12, TextColor: #7a88a0, HorizontalAlignment: Start, Wrap: true);
+                Text: "Choose 2 Branches. Remaining will be locked.";
+                Anchor: (Height: 18);
+              }
+
+              Label #CommitFlavor {
+                Style: (FontSize: 11, TextColor: #9aa7b8, HorizontalAlignment: Start, Wrap: true);
+                Text: "";
+                Anchor: (Height: 24);
+              }
+            }
+
+            Group #CommitmentCard {
+              LayoutMode: Top;
+              Anchor: (Width: 200, Height: 50);
+              Padding: (Full: 8);
+              Background: #131722;
+
+              Label #CommitmentTitle {
+                Style: (FontSize: 10, TextColor: #7a88a0, RenderUppercase: true, HorizontalAlignment: Start);
+                Text: "COMMITMENT";
+                Anchor: (Height: 14);
+              }
+
+              Group #CommitmentDots {
+                LayoutMode: Right;
+                Anchor: (Height: 10);
+
+                Group #CommitPip1 {
+                  Anchor: (Width: 50, Height: 6);
+                  Background: #2d323e;
+                  Padding: (Right: 6);
+                }
+                Group #CommitPip2 {
+                  Anchor: (Width: 50, Height: 6);
+                  Background: #2d323e;
+                }
+              }
+            }
+          }
+
+          Group #Separator {
+            Anchor: (Height: 1);
+            Background: #2d323e;
+          }
+
+          Group #ContentRow {
+            LayoutMode: Right;
+            FlexWeight: 1;
+            Padding: (Top: 12);
+
+            Group #TreesContainer {
+              LayoutMode: Left;
+              Anchor: (Width: 1080, Height: 620);
+              Padding: (Right: 12);
+
+              Group #BranchA { Anchor: (Width: 260, Height: 620); Padding: (Right: 12, Bottom: 12); }
+              Group #BranchB { Anchor: (Width: 260, Height: 620); Padding: (Right: 12, Bottom: 12); }
+              Group #BranchC { Anchor: (Width: 260, Height: 620); Padding: (Right: 12, Bottom: 12); }
+              Group #BranchD { Anchor: (Width: 260, Height: 620); Padding: (Right: 12, Bottom: 12); }
+            }
+
+            Group #PerkPanel {
+              LayoutMode: Top;
+              Anchor: (Width: 280, Height: 620);
+              Padding: (Full: 12);
+              Background: #11141c;
+
+              Group #PerkPanelHeader {
+                LayoutMode: Right;
+                Anchor: (Height: 20);
+
+                Label #PerkPanelTitle {
+                  Style: @PerkPanelTitleStyle;
+                  Text: "Select a perk";
+                  FlexWeight: 1;
+                }
+
+                TextButton #PerkPanelClose {
+                  Style: @TooltipCloseButtonStyle;
+                  Text: "X";
+                  Anchor: (Width: 18, Height: 16);
+                }
+              }
+
+              Label #PerkPanelBranch {
+                Style: @PerkPanelBranchStyle;
+                Text: "";
+                Anchor: (Height: 12);
+                Padding: (Top: 6);
+              }
+
+              Label #PerkPanelLevel {
+                Style: @PerkPanelLevelStyle;
+                Text: "";
+                Anchor: (Height: 12);
+                Padding: (Top: 2);
+              }
+
+              Label #PerkPanelFlavor {
+                Style: @PerkPanelFlavorStyle;
+                Text: "";
+                Anchor: (Height: 40);
+                Padding: (Top: 8);
+              }
+
+              Label #PerkPanelDesc {
+                Style: @PerkPanelDescStyle;
+                Text: "";
+                Anchor: (Height: 200);
+                Padding: (Top: 6);
+              }
+
+              Group #PerkPanelSpacer {
+                FlexWeight: 1;
+              }
+
+              Label #PerkPanelReq {
+                Style: @PerkPanelReqStyle;
+                Text: "";
+                Anchor: (Height: 36);
+              }
+
+              TextButton #UpgradeBtn {
+                Style: @UpgradeButtonStyle;
+                Text: "UPGRADE";
+                Anchor: (Width: 256, Height: 32);
+                Padding: (Top: 6);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

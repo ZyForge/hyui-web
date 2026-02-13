@@ -1,0 +1,87 @@
+Group #SoulHUD {
+  Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+
+  Group #EssenceBarRoot {
+    Anchor: (Bottom: 36 + 74 + 24 + 6 - 2, Width: 625, Height: 20);
+    LayoutMode: Center;
+
+    Group #EssenceBarFrame {
+      Anchor: (Width: 625, Height: 14);
+      Background: #151a2386;
+      Padding: (Full: 1);
+
+      Group #EssenceBarBase {
+        Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+        Background: #0b0f15;
+      }
+
+      ProgressBar #EssenceBarStage1 {
+        Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+        BarTexturePath: "Textures/essence_stage1.png";
+        EffectTexturePath: "Textures/bareffect.png";
+        Value: 0.0;
+      }
+
+      ProgressBar #EssenceBarStage2 {
+        Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+        BarTexturePath: "Textures/essence_stage2.png";
+        EffectTexturePath: "Textures/bareffect.png";
+        Value: 0.0;
+      }
+
+      ProgressBar #EssenceBarStage3 {
+        Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+        BarTexturePath: "Textures/essence_stage3.png";
+        EffectTexturePath: "Textures/bareffect.png";
+        Value: 0.0;
+      }
+
+      ProgressBar #EssenceBarStage4 {
+        Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+        BarTexturePath: "Textures/essence_stage4.png";
+        EffectTexturePath: "Textures/bareffect.png";
+        Value: 0.0;
+      }
+
+      ProgressBar #EssenceBarStage5 {
+        Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+        BarTexturePath: "Textures/essence_stage5.png";
+        EffectTexturePath: "Textures/bareffect.png";
+        Value: 0.0;
+      }
+
+      Group #EssencePips {
+        Anchor: (Left: 1, Top: -18, Height: 12);
+        LayoutMode: Left;
+
+        Group #EssencePip1 { Anchor: (Width: 10, Height: 10); Background: #2d323e; }
+        Group #EssencePip2 { Anchor: (Width: 10, Height: 10); Background: #2d323e; Padding: (Left: 4, Right: 4); }
+        Group #EssencePip3 { Anchor: (Width: 10, Height: 10); Background: #2d323e; Padding: (Left: 4, Right: 4); }
+        Group #EssencePip4 { Anchor: (Width: 10, Height: 10); Background: #2d323e; Padding: (Left: 4, Right: 4); }
+        Group #EssencePip5 { Anchor: (Width: 10, Height: 10); Background: #2d323e; Padding: (Left: 4, Right: 4); }
+      }
+    }
+  }
+
+  Group #StrainBarRoot {
+    Anchor: (Left: 18, Bottom: 24, Width: 8, Height: 80);
+    Background: #151a23;
+    Padding: (Full: 1);
+
+    Group #StrainBarBase {
+      Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+      Background: #0b0f15;
+    }
+
+    Group #StrainSeg1 { Anchor: (Left: 0, Right: 0, Bottom: 0, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg2 { Anchor: (Left: 0, Right: 0, Bottom: 8, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg3 { Anchor: (Left: 0, Right: 0, Bottom: 16, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg4 { Anchor: (Left: 0, Right: 0, Bottom: 24, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg5 { Anchor: (Left: 0, Right: 0, Bottom: 32, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg6 { Anchor: (Left: 0, Right: 0, Bottom: 40, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg7 { Anchor: (Left: 0, Right: 0, Bottom: 48, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg8 { Anchor: (Left: 0, Right: 0, Bottom: 56, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg9 { Anchor: (Left: 0, Right: 0, Bottom: 64, Height: 6); Background: #1a1f29; }
+    Group #StrainSeg10 { Anchor: (Left: 0, Right: 0, Bottom: 72, Height: 6); Background: #1a1f29; }
+  }
+}

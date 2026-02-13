@@ -1,0 +1,43 @@
+@InvestLabelStyle = LabelStyle(
+  FontSize: 12,
+  TextColor: #e6edf3,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@InvestDisabledLabelStyle = LabelStyle(
+  ...@InvestLabelStyle,
+  TextColor: #4f5966
+);
+
+@InvestButtonStyle = TextButtonStyle(
+  Default: (Background: #1a1f29, LabelStyle: @InvestLabelStyle),
+  Hovered: (Background: #242b38, LabelStyle: @InvestLabelStyle),
+  Pressed: (Background: #151a22, LabelStyle: @InvestLabelStyle),
+  Disabled: (Background: #0f131a, LabelStyle: @InvestDisabledLabelStyle)
+);
+
+Group #Node {
+  LayoutMode: Right;
+  Anchor: (Height: 40);
+  Padding: (Bottom: 5);
+
+  Label #PerkName {
+    Style: (FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center);
+    Text: "Perk Name";
+    FlexWeight: 1;
+  }
+
+  Label #PerkLevel {
+    Style: (FontSize: 14, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center);
+    Text: "0/3";
+    Anchor: (Width: 40);
+    Padding: (Right: 10);
+  }
+
+  TextButton #InvestBtn {
+    Style: @InvestButtonStyle;
+    Text: "+";
+    Anchor: (Width: 32, Height: 32);
+  }
+}

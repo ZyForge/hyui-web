@@ -1,0 +1,51 @@
+@NodeNameStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #b0b9c7,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center,
+  Wrap: true
+);
+
+@NodeLevelStyle = LabelStyle(
+  FontSize: 9,
+  TextColor: #7a88a0,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
+@NodeButtonStyle = TextButtonStyle(
+  Default: (Background: #1a1f29),
+  Hovered: (Background: #242b38),
+  Pressed: (Background: #151a22),
+  Disabled: (Background: #0f131a)
+);
+
+Group #TreeNode {
+  LayoutMode: Top;
+  Anchor: (Width: 96, Height: 70);
+
+  Group #IconFrame {
+    Anchor: (Width: 50, Height: 50);
+    LayoutMode: Center;
+    Padding: (Full: 2);
+    Background: #2d323e;
+
+    TextButton #PerkBtn {
+      Style: @NodeButtonStyle;
+      Anchor: (Width: 46, Height: 46);
+      Text: "";
+    }
+  }
+
+  Label #PerkName {
+    Style: @NodeNameStyle;
+    Text: "Perk Name";
+    Anchor: (Height: 14);
+  }
+
+  Label #PerkLevel {
+    Style: @NodeLevelStyle;
+    Text: "0/3";
+    Anchor: (Height: 10);
+  }
+}
