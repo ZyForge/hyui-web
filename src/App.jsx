@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PanelRight, Play, Save, FileCode, AlertCircle, Plus, Eye, Code, Trash2, ChevronDown, X, Undo2, Redo2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { PanelRight, Play, Save, FileCode, AlertCircle, Plus, Eye, Code, Trash2, ChevronDown, X, Undo2, Redo2, ZoomIn, ZoomOut, RotateCcw, Heart, Info, ExternalLink } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEditorStore } from './lib/hytale-ui/store';
 import { TreeView } from './components/TreeView';
@@ -39,10 +39,12 @@ function App() {
         updateElement, addElement, deleteElement, moveElement, serialize, serializeWithOffsets, loadHytaleData, undo, redo, _undoStack, _redoStack
     } = useEditorStore();
 
-    const selectedId = selectedIds[0] || null; // For single-element editors
-  const [bgMode, setBgMode] = useState('ui');
+    const [bgMode, setBgMode] = useState('ui'); // 'ui', 'clean', 'flat'
+    const [zoom, setZoom] = useState(1);
+    const [showAttributions, setShowAttributions] = useState(false);
+    const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
+
   const [viewport, setViewport] = useState({ x: 0, y: 0 }); // Just pan
-  const [zoom, setZoom] = useState(1.0);
   const [isPanning, setIsPanning] = useState(false);
 
   const [leftPanelMode, setLeftPanelMode] = useState('hierarchy'); // 'hierarchy' | 'source'
@@ -556,10 +558,68 @@ function App() {
              </div>
           </div>
 
-          <div className="text-[9px] text-hytale-accent/40 font-mono tracking-widest overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px]">
+          <div className="text-[9px] text-hytale-accent/40 font-mono tracking-widest overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px] flex items-center gap-3">
             {selectedId ? `SELECTED: ${selectedId}` : 'IDLE'}
+            <div className="w-px h-2 bg-white/10" />
+            <button 
+              onClick={() => setShowAttributions(true)}
+              className="text-hytale-muted hover:text-hytale-accent transition-colors flex items-center gap-1 group"
+            >
+              <Info size={10} className="group-hover:scale-110 transition-transform" />
+              <span>Attributions</span>
+            </button>
           </div>
         </footer>
+
+        {/* Attributions Modal */}
+        {showAttributions && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 select-none">
+             {/* Backdrop */}
+             <div 
+               className="absolute inset-0 bg-black/80 backdrop-blur-md"
+               onClick={() => setShowAttributions(false)}
+             />
+             
+             {/* Modal Content */}
+             <div className="relative w-full max-w-sm bg-hytale-sidebar border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col p-8 items-center text-center gap-6 animate-in fade-in zoom-in duration-300">
+                <div className="w-20 h-20 bg-hytale-accent/10 rounded-full flex items-center justify-center border border-hytale-accent/20">
+                    <Heart size={40} className="text-hytale-accent animate-pulse" />
+                </div>
+                
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-black text-white italic tracking-tighter">PROJECT ATTRIBUTIONS</h2>
+                    <p className="text-hytale-muted text-xs leading-relaxed max-w-[250px] mx-auto">
+                        This project is dedicated to the Hytale community and its developers.
+                    </p>
+                </div>
+
+                <div className="w-full h-px bg-white/5" />
+
+                <div className="space-y-1">
+                    <span className="text-[10px] text-hytale-muted font-bold uppercase tracking-widest">Developer</span>
+                    <h3 className="text-xl font-bold text-white tracking-wide">Ardalivus</h3>
+                </div>
+
+                <a 
+                  href="https://ko-fi.com/ardalivus" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-3 bg-hytale-accent hover:bg-hytale-accent/90 text-black py-4 rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-hytale-accent/20"
+                >
+                  <Heart size={18} fill="currentColor" />
+                  Support on Ko-fi
+                  <ExternalLink size={14} className="opacity-50" />
+                </a>
+
+                <button 
+                  onClick={() => setShowAttributions(false)}
+                  className="text-hytale-muted hover:text-white text-[10px] font-bold underline underline-offset-4 decoration-white/10"
+                >
+                  Close Credits
+                </button>
+             </div>
+          </div>
+        )}
       </main>
 
       {/* Right Sidebar - Properties */}
