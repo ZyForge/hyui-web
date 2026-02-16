@@ -1050,18 +1050,16 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
           flexShrink: 0,
           position: 'relative',
           backgroundColor: bgMode === 'flat' ? '#1a1d24' : 'black',
-          backgroundImage: bgImage ? `url(${bgImage})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          boxShadow: '0 0 100px rgba(0,0,0,0.8)',
           pointerEvents: 'auto',
-          // Grid Overlay
+          // Combined Background & Grid Overlay
           backgroundImage: gridSettings.visible ? `
             linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px),
             ${bgImage ? `url(${bgImage})` : 'none'}
           ` : (bgImage ? `url(${bgImage})` : 'none'),
           backgroundSize: gridSettings.visible ? `${gridSettings.size}px ${gridSettings.size}px, ${gridSettings.size}px ${gridSettings.size}px, cover` : 'cover',
+          backgroundPosition: 'center',
+          boxShadow: '0 0 100px rgba(0,0,0,0.8)',
           border: '1px solid rgba(255,255,255,0.1)'
          }}
       >
