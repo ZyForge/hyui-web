@@ -120,7 +120,7 @@ Used for `Label` elements or text within buttons.
 | `RenderUppercase` | Boolean | Forces text to uppercase. |
 | `HorizontalAlignment` | Enum | `Start`, `Center`, `End`. |
 | `VerticalAlignment` | Enum | `Start`, `Center`, `End`. |
-| `Bold` | Boolean | Optional bold weight. |
+| `RenderBold` | Boolean | Optional bold weight. |
 
 **Example:**
 
