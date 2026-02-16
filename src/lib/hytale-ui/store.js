@@ -222,6 +222,15 @@ export const useEditorStore = create((set, get) => ({
       return { doc: newDoc, selectedIds: newSelectedIds, expandedIds: newExpandedIds };
     });
   },
+  
+  updateVariable: (name, value) => {
+    get()._pushUndoDebounced();
+    set(state => {
+      const newDoc = JSON.parse(JSON.stringify(state.doc));
+      newDoc.variables[name] = value;
+      return { doc: newDoc };
+    });
+  },
 
   addElement: (parentKey, elementData) => {
     const type = typeof elementData === 'string' ? elementData : elementData.type;

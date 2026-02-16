@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
-import { Move, Maximize2, ChevronDown, Check } from 'lucide-react';
+import { Move, Maximize2, ChevronDown, Check, AlertCircle } from 'lucide-react';
 
 // --- Hytale-accurate color constants ---
 const HYTALE_COLORS = {
@@ -36,7 +36,11 @@ const resolveValue = (value, variables) => {
 };
 
 // Layout Mode to flex mapping
+// Layout Mode to flex mapping
 const getLayoutStyles = (mode) => {
+  if (mode && !['Top', 'Bottom', 'Left', 'Center', 'Right', 'TopScrolling', 'LeftCenterWrap', 'Middle'].includes(mode)) {
+      return { outline: '2px dashed red', outlineOffset: '-2px' }; // Visual error
+  }
   switch (mode) {
     case 'Top': return { display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'visible' };
     case 'Bottom': return { display: 'flex', flexDirection: 'column-reverse', alignItems: 'center', overflow: 'visible' };
@@ -631,14 +635,14 @@ const CommonComponents = {
   '$C.@Title': ({ properties, variables }) => {
     const text = resolveValue(properties['@Text'], variables) || '';
     const alignment = resolveValue(properties['@Alignment'], variables) || 'Start';
-    const textAlign = alignment === 'Center' ? 'center' : alignment === 'End' ? 'right' : 'left';
+    const justifyContent = alignment === 'Center' ? 'center' : alignment === 'End' ? 'flex-end' : 'flex-start';
     return (
       <div style={{
         fontSize: 15, fontWeight: 'bold', textTransform: 'uppercase',
-        color: HYTALE_COLORS.textTitle, textAlign,
+        color: HYTALE_COLORS.textTitle,
         width: '100%', height: '100%',
         display: 'flex', alignItems: 'center',
-        justifyContent: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
+        justifyContent,
       }}>
         {text}
       </div>
@@ -675,16 +679,91 @@ const CommonComponents = {
 const getElementKey = (element) => element.id || element.__uid;
 
 // --- Main Element Renderer (Recursive) ---
-export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {} }) => {
-  if (!element) return null;
+export const BaseElement = ({ element, variables, selectedIds, onSelect, onUpdate, children, style = {}, className = "", errors = [], gridSettings = {} }) => {
+  const isSelected = selectedIds.includes(element.id) || selectedIds.includes(element.__uid);
+  const elementErrors = errors.filter(e => e.elementId === element.id || e.elementId === element.__uid);
+  const hasErrors = elementErrors.length > 0;
 
-  const elKey = getElementKey(element);
-  const isSelected = Array.isArray(selectedIds) && selectedIds.includes(elKey);
+  const handleClick = (e) => {
+    if (e.defaultPrevented) return;
+    e.stopPropagation();
+    if (onSelect) onSelect(element.id || element.__uid, e.shiftKey || e.ctrlKey || e.metaKey);
+  };
   const elRef = useRef(null);
 
   const isVisible = element.properties.Visible !== false;
 
   if (!isVisible) return null;
+
+  const anchor = resolveAnchor(element.properties.Anchor, variables);
+  const anchorStyles = getAnchorStyles(anchor);
+
+  // Function to update this specific element's properties
+  const updateThisElement = (newProps) => {
+    if (onUpdate) {
+      onUpdate(element.id || element.__uid, newProps);
+    }
+  };
+
+  return (
+    <div
+      data-element-wrapper
+      id={element.id || element.__uid}
+      ref={elRef}
+      className={clsx(
+        "relative transition-all duration-200",
+        isSelected && "outline outline-2 outline-hytale-accent outline-offset-1 z-50",
+        hasErrors && "outline outline-2 outline-red-500/50 outline-offset-2 shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+        className
+      )}
+      style={{ position: 'relative', ...anchorStyles, cursor: 'default', ...style }}
+      onClick={handleClick}
+    >
+      {/* Selection Label */}
+      {isSelected && (
+        <div className="absolute -top-7 left-0 bg-hytale-accent text-black text-[9px] font-black px-2 py-1 rounded shadow-xl flex items-center gap-2 whitespace-nowrap z-[100] animate-in slide-in-from-bottom-1 duration-200">
+          <span className="uppercase tracking-widest">{element.type}</span>
+          <span className="opacity-40 font-mono">#{element.id || 'anonymous'}</span>
+        </div>
+      )}
+
+      {/* Error Indicator */}
+      {hasErrors && (
+        <div className="absolute -top-7 right-0 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded shadow-xl flex items-center gap-2 whitespace-nowrap z-[100] group/error">
+          <AlertCircle size={10} className="animate-pulse" strokeWidth={3} />
+          <span className="uppercase tracking-widest">{elementErrors.length} {elementErrors.length === 1 ? 'ERROR' : 'ERRORS'}</span>
+          
+          {/* Detailed Error Tooltip */}
+          <div className="absolute top-full right-0 mt-2 w-72 bg-[#0a0a0a] border border-red-500/50 p-4 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl hidden group-hover/error:block pointer-events-none z-[110] animate-in fade-in zoom-in-95 duration-200">
+            <div className="space-y-3">
+                {elementErrors.map((err, i) => (
+                    <div key={i} className="text-[10px] text-red-400 font-bold leading-relaxed border-b border-white/5 last:border-0 pb-2 last:pb-0 break-words whitespace-normal">
+                        <span className="text-red-500 mr-1.5">•</span>{err.message}
+                    </div>
+                ))}
+            </div>
+            {/* Arrow */}
+            <div className="absolute -top-1.5 right-6 w-3 h-3 bg-[#0a0a0a] border-t border-l border-red-500/50 rotate-45" />
+          </div>
+        </div>
+      )}
+
+      {children}
+
+      {isSelected && elRef.current && (
+        <SelectionOverlay 
+          elDiv={elRef.current} 
+          anchor={anchor} 
+          onUpdate={updateThisElement} 
+          gridSettings={gridSettings}
+        />
+      )}
+    </div>
+  );
+};
+
+export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, errors = [] }) => {
+  if (!element) return null;
 
   const renderChildren = (children) => {
     return (children || []).map((child, index) => (
@@ -696,36 +775,23 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
         onSelect={onSelect}
         onUpdate={onUpdate}
         gridSettings={gridSettings}
+        errors={errors}
       />
     ));
-  };
-
-  const handleSelect = (e) => {
-    if (e.defaultPrevented) return;
-    e.stopPropagation();
-    if (onSelect) onSelect(elKey, e.shiftKey || e.ctrlKey || e.metaKey);
-  };
-
-  const anchor = resolveAnchor(element.properties.Anchor, variables);
-  const anchorStyles = getAnchorStyles(anchor);
-
-  // Function to update this specific element's properties
-  const updateThisElement = (newProps) => {
-    if (onUpdate) {
-      onUpdate(elKey, newProps);
-    }
   };
 
   // Common component rendering
   if (CommonComponents[element.type]) {
     const Comp = CommonComponents[element.type];
     return (
-      <div
-        data-element-wrapper
-        id={elKey}
-        ref={elRef}
-        style={{ position: 'relative', ...anchorStyles, cursor: 'default' }}
-        onClick={handleSelect}
+      <BaseElement
+        element={element}
+        variables={variables}
+        selectedIds={selectedIds}
+        onSelect={onSelect}
+        onUpdate={onUpdate}
+        gridSettings={gridSettings}
+        errors={errors}
       >
         <Comp
           properties={{ ...element.properties, Anchor: {} }}
@@ -733,15 +799,7 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
           variables={variables}
           renderChildren={renderChildren}
         />
-        {isSelected && elRef.current && (
-          <SelectionOverlay 
-            elDiv={elRef.current} 
-            anchor={anchor} 
-            onUpdate={updateThisElement} 
-            gridSettings={gridSettings}
-          />
-        )}
-      </div>
+      </BaseElement>
     );
   }
 
@@ -920,6 +978,8 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
   // 2. If it has size but no positioning, it's a window that should be centered (standard Page/Menu).
   const isRoot = !element._hasParent;
   const rootStyles = {};
+  const anchor = resolveAnchor(element.properties.Anchor, variables);
+  
   if (isRoot) {
     const hasSize = anchor.Width !== undefined || anchor.Height !== undefined;
     const hasPos = anchor.Top !== undefined || anchor.Bottom !== undefined || anchor.Left !== undefined || anchor.Right !== undefined;
@@ -935,28 +995,23 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
   }
 
   return (
-    <div
-      data-element-wrapper
-      id={elKey}
-      ref={elRef}
-      style={{ position: 'relative', ...anchorStyles, ...flexStyles, ...rootStyles, cursor: 'default' }}
-      onClick={handleSelect}
+    <BaseElement
+      element={element}
+      variables={variables}
+      selectedIds={selectedIds}
+      onSelect={onSelect}
+      onUpdate={onUpdate}
+      gridSettings={gridSettings}
+      errors={errors}
+      style={{ ...flexStyles, ...rootStyles }}
     >
       {content}
-      {isSelected && elRef.current && (
-        <SelectionOverlay 
-          elDiv={elRef.current} 
-          anchor={anchor} 
-          onUpdate={updateThisElement} 
-          gridSettings={gridSettings}
-        />
-      )}
-    </div>
+    </BaseElement>
   );
 };
 
 // --- Entry Point Wrapper with Logical Viewport Scaling ---
-export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, bgMode, zoom = 1 }) => {
+export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, bgMode, zoom = 1, errors = [] }) => {
   const containerRef = useRef(null);
   const [autoScale, setAutoScale] = useState(1);
 
@@ -1017,6 +1072,7 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
           onSelect={onSelect}
           onUpdate={onUpdate}
           gridSettings={gridSettings}
+          errors={errors}
         />
       </div>
       

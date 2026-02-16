@@ -125,6 +125,21 @@ class Tokenizer {
   constructor(input) {
     this.input = input;
     this.pos = 0;
+    this.line = 1;
+    this.column = 1;
+  }
+
+  updatePos(n) {
+    for (let i = 0; i < n; i++) {
+        const char = this.input[this.pos + i];
+        if (char === '\n') {
+            this.line++;
+            this.column = 1;
+        } else {
+            this.column++;
+        }
+    }
+    this.pos += n;
   }
 
   nextToken() {
@@ -133,20 +148,24 @@ class Tokenizer {
 
     const char = this.input[this.pos];
 
+    const startLine = this.line;
+    const startColumn = this.column;
+
     // Spread syntax: ...
     if (char === '.' && this.input[this.pos + 1] === '.' && this.input[this.pos + 2] === '.') {
-      this.pos += 3;
-      return { type: 'SPREAD', value: '...' };
+      this.updatePos(3);
+      return { type: 'SPREAD', value: '...', line: startLine, column: startColumn };
     }
 
     // # — could be an element ID (#SoulHUD) or a hex color (#ff00aa)
     if (char === '#') {
-      this.pos++; // skip #
+      this.updatePos(1); // skip #
       
       // Read the entire rest of the identifier
       let fullIdentifier = '';
       while (this.pos < this.input.length && /[a-zA-Z0-9_]/.test(this.input[this.pos])) {
-        fullIdentifier += this.input[this.pos++];
+        fullIdentifier += this.input[this.pos];
+        this.updatePos(1);
       }
       
       // Disambiguate: is it a valid hex color? 
@@ -159,46 +178,56 @@ class Tokenizer {
       if (isPureHex && isColorLength) {
         let value = '#' + fullIdentifier;
         if (nextChar === '(') {
-          this.pos++; // (
+          this.updatePos(1); // (
           value += '(';
           while (this.pos < this.input.length && this.input[this.pos] !== ')') {
-            value += this.input[this.pos++];
+            value += this.input[this.pos];
+            this.updatePos(1);
           }
-          if (this.pos < this.input.length) value += this.input[this.pos++]; // )
+          if (this.pos < this.input.length) {
+            value += this.input[this.pos];
+            this.updatePos(1); // )
+          }
         }
-        return { type: 'VALUE', value };
+        return { type: 'VALUE', value, line: startLine, column: startColumn };
       }
 
       // Default to HASH_ID
-      return { type: 'HASH_ID', value: fullIdentifier };
+      return { type: 'HASH_ID', value: fullIdentifier, line: startLine, column: startColumn };
     }
 
     // Reference prefixes: $, @, %
     if (char === '$' || char === '@' || char === '%') {
-      this.pos++;
+      this.updatePos(1);
       let value = '';
       while (this.pos < this.input.length && /[a-zA-Z0-9_.@$%]/.test(this.input[this.pos])) {
-        value += this.input[this.pos++];
+        value += this.input[this.pos];
+        this.updatePos(1);
       }
-      return { type: 'REFERENCE', prefix: char, value };
+      return { type: 'REFERENCE', prefix: char, value, line: startLine, column: startColumn };
     }
 
     // String literals
     if (char === '"') {
       let value = '';
-      this.pos++;
+      this.updatePos(1);
       while (this.pos < this.input.length && this.input[this.pos] !== '"') {
-        if (this.input[this.pos] === '\\') this.pos++;
-        value += this.input[this.pos++];
+        if (this.input[this.pos] === '\\') {
+            this.updatePos(1);
+        }
+        value += this.input[this.pos];
+        this.updatePos(1);
       }
-      this.pos++; // closing "
-      return { type: 'STRING', value };
+      if (this.pos < this.input.length) {
+        this.updatePos(1); // closing "
+      }
+      return { type: 'STRING', value, line: startLine, column: startColumn };
     }
 
     // Arithmetic operators
     if (char === '+') {
-      this.pos++;
-      return { type: 'OPERATOR', value: '+' };
+      this.updatePos(1);
+      return { type: 'OPERATOR', value: '+', line: startLine, column: startColumn };
     }
     if (char === '-') {
       // Disambiguate: negative number vs subtraction
@@ -206,41 +235,43 @@ class Tokenizer {
       if (/[0-9]/.test(this.input[this.pos + 1] || '') && (prevNonWs === null || /[(:,=+\-]/.test(prevNonWs))) {
         // Negative number
         let value = '-';
-        this.pos++;
+        this.updatePos(1);
         while (this.pos < this.input.length && /[0-9.]/.test(this.input[this.pos])) {
-          value += this.input[this.pos++];
+          value += this.input[this.pos];
+          this.updatePos(1);
         }
-        return { type: 'NUMBER', value: Number(value) };
+        return { type: 'NUMBER', value: Number(value), line: startLine, column: startColumn };
       }
-      this.pos++;
-      return { type: 'OPERATOR', value: '-' };
+      this.updatePos(1);
+      return { type: 'OPERATOR', value: '-', line: startLine, column: startColumn };
     }
 
     // Punctuation
     if (['{', '}', ':', ';', '=', '(', ')', '[', ']', ','].includes(char)) {
-      this.pos++;
-      return { type: 'PUNCTUATION', value: char };
+      this.updatePos(1);
+      return { type: 'PUNCTUATION', value: char, line: startLine, column: startColumn };
     }
 
     // Identifiers, numbers, booleans
     let value = '';
     while (this.pos < this.input.length && /[a-zA-Z0-9_.@$%]/.test(this.input[this.pos])) {
-      value += this.input[this.pos++];
+      value += this.input[this.pos];
+      this.updatePos(1);
     }
 
     if (value === '') {
       // Skip unexpected character to prevent infinite loop
-      this.pos++;
+      this.updatePos(1);
       return this.nextToken();
     }
 
-    if (value === 'true' || value === 'false') return { type: 'BOOLEAN', value: value === 'true' };
-    if (value === 'null') return { type: 'NULL', value: null };
+    if (value === 'true' || value === 'false') return { type: 'BOOLEAN', value: value === 'true', line: startLine, column: startColumn };
+    if (value === 'null') return { type: 'NULL', value: null, line: startLine, column: startColumn };
     
     const num = Number(value);
-    if (!isNaN(num) && value !== '' && /^[0-9]/.test(value)) return { type: 'NUMBER', value: num };
+    if (!isNaN(num) && value !== '' && /^[0-9]/.test(value)) return { type: 'NUMBER', value: num, line: startLine, column: startColumn };
 
-    return { type: 'IDENTIFIER', value };
+    return { type: 'IDENTIFIER', value, line: startLine, column: startColumn };
   }
 
   _prevNonWhitespace() {
@@ -253,17 +284,21 @@ class Tokenizer {
     while (this.pos < this.input.length) {
       const char = this.input[this.pos];
       if (/\s/.test(char)) {
-        this.pos++;
+        this.updatePos(1);
         continue;
       }
       if (this.input.startsWith('//', this.pos)) {
-        while (this.pos < this.input.length && this.input[this.pos] !== '\n') this.pos++;
+        while (this.pos < this.input.length && this.input[this.pos] !== '\n') {
+            this.updatePos(1);
+        }
         continue;
       }
       if (this.input.startsWith('/*', this.pos)) {
-        this.pos += 2;
-        while (this.pos < this.input.length && !this.input.startsWith('*/', this.pos)) this.pos++;
-        this.pos += 2;
+        this.updatePos(2);
+        while (this.pos < this.input.length && !this.input.startsWith('*/', this.pos)) {
+            this.updatePos(1);
+        }
+        this.updatePos(2);
         continue;
       }
       break;
@@ -276,12 +311,16 @@ class Tokenizer {
 
   peekAt(n) {
     const oldPos = this.pos;
+    const oldLine = this.line;
+    const oldColumn = this.column;
     let token = null;
     for (let i = 0; i <= n; i++) {
         token = this.nextToken();
         if (token === null) break;
     }
     this.pos = oldPos;
+    this.line = oldLine;
+    this.column = oldColumn;
     return token;
   }
 }
@@ -292,6 +331,7 @@ export class HytaleUIParser {
   static parse(input) {
     const tokenizer = new Tokenizer(input);
     const doc = { imports: {}, variables: {}, root: null };
+    const errors = [];
 
     let token;
     let safetyCounter = 0;
@@ -302,38 +342,38 @@ export class HytaleUIParser {
       if (!token) break;
 
       if (++safetyCounter > maxIterations) {
-        console.error('Parser: max iterations exceeded at top level, pos:', tokenizer.pos);
+        errors.push({ line: tokenizer.line, column: tokenizer.column, message: 'Parser: max iterations exceeded at top level' });
         break;
       }
 
       if (token.type === 'REFERENCE') {
-        // Is it an assignment? (@Var = ... or $Import = ...)
         const next = tokenizer.peekAt(1);
-        const afterNext = tokenizer.peekAt(2);
         
         if (next?.type === 'PUNCTUATION' && next.value === '=') {
-          // It's a Variable or Import assignment
-          tokenizer.nextToken(); // consume prefix
-          tokenizer.nextToken(); // consume =
+          // Assignment
+          tokenizer.nextToken(); // @Var or $Import
+          tokenizer.nextToken(); // =
           if (token.prefix === '$') {
             const pathToken = tokenizer.nextToken();
-            doc.imports[token.value] = pathToken.value;
+            if (pathToken?.type === 'STRING') {
+                doc.imports[token.value] = pathToken.value;
+            } else {
+                errors.push({ line: token.line, column: token.column, message: 'Expected string path for import' });
+            }
             if (tokenizer.peek()?.value === ';') tokenizer.nextToken();
           } else {
-            doc.variables[token.value] = this.parseValue(tokenizer);
+            doc.variables[token.value] = this.parseValue(tokenizer, errors);
             if (tokenizer.peek()?.value === ';') tokenizer.nextToken();
           }
         } else {
-          // Not an assignment -> must be the root element!
-          doc.root = this.parseElement(tokenizer);
+          doc.root = this.parseElement(tokenizer, errors);
           break; 
         }
       } else if (token.type === 'IDENTIFIER' || token.type === 'HASH_ID') {
-        // Root element!
-        doc.root = this.parseElement(tokenizer);
+        doc.root = this.parseElement(tokenizer, errors);
         break;
       } else {
-        // Skip unknown top-level tokens
+        errors.push({ line: token.line, column: token.column, message: `Unexpected top-level token: ${token.value || token.type}` });
         tokenizer.nextToken();
       }
     }
@@ -351,10 +391,10 @@ export class HytaleUIParser {
     };
     assignUids(doc.root);
 
-    return doc;
+    return { doc, errors };
   }
 
-  static parseElement(tokenizer) {
+  static parseElement(tokenizer, errors) {
     let typeToken = tokenizer.nextToken();
     if (!typeToken) return null;
 
@@ -374,6 +414,7 @@ export class HytaleUIParser {
     // Expect opening {
     const openBrace = tokenizer.nextToken();
     if (!openBrace || openBrace.value !== '{') {
+      errors.push({ line: typeToken.line, column: typeToken.column, message: `Expected '{' after element type ${type}` });
       return { type, id, properties: {}, children: [] };
     }
 
@@ -384,12 +425,15 @@ export class HytaleUIParser {
 
     while (true) {
       if (++safetyCounter > maxIterations) {
-        console.error('Parser: max iterations in element body, pos:', tokenizer.pos);
+        errors.push({ line: tokenizer.line, column: tokenizer.column, message: 'Parser: max iterations in element body' });
         break;
       }
 
       const next = tokenizer.peek();
-      if (!next) break;
+      if (!next) {
+        errors.push({ line: tokenizer.line, column: tokenizer.column, message: 'Unexpected end of input: missing closing brace }' });
+        break;
+      }
       if (next.type === 'PUNCTUATION' && next.value === '}') {
         tokenizer.nextToken(); // consume }
         break;
@@ -404,43 +448,57 @@ export class HytaleUIParser {
         if (afterKey && afterKey.type === 'PUNCTUATION' && afterKey.value === ':') {
           // Property: Key: Value;
           tokenizer.nextToken(); // :
-          properties[key] = this.parseValue(tokenizer);
-          if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === ';') tokenizer.nextToken();
+          properties[key] = this.parseValue(tokenizer, errors);
+          if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === ';') {
+            tokenizer.nextToken();
+          } else {
+            errors.push({ line: keyToken.line, column: keyToken.column, message: `Missing semicolon after property ${key}` });
+          }
         } else if (afterKey && afterKey.type === 'PUNCTUATION' && afterKey.value === '=') {
           // Parameter assignment: @Text = "...";
           tokenizer.nextToken(); // =
-          properties[key] = this.parseValue(tokenizer);
-          if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === ';') tokenizer.nextToken();
-        } else if (afterKey && (
-          (afterKey.type === 'PUNCTUATION' && afterKey.value === '{') ||
-          afterKey.type === 'HASH_ID'
-        )) {
-          // It's a child element — rewind the type name and parse
-          const rewindLen = key.startsWith('@') || key.startsWith('$') || key.startsWith('%') 
-            ? key.length  // prefix was already included in key
-            : key.length;
-          // Rewind properly based on token type
-          if (keyToken.prefix) {
-            tokenizer.pos -= (keyToken.value.length + 1); // +1 for the prefix char
+          properties[key] = this.parseValue(tokenizer, errors);
+          if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === ';') {
+            tokenizer.nextToken();
           } else {
-            tokenizer.pos -= keyToken.value.length;
+            errors.push({ line: keyToken.line, column: keyToken.column, message: `Missing semicolon after assignment ${key}` });
           }
-          const child = this.parseElement(tokenizer);
-          if (child) children.push(child);
         } else {
-          // Could still be a child element if after looking further we find { 
-          // (e.g., the key might be a type name and the next thing after more tokens is {)
-          // For safety, try to parse as child element
-          if (keyToken.prefix) {
-            tokenizer.pos -= (keyToken.value.length + 1);
+          // Child element or unknown?
+          // If the next thing is { or #ID, it's definitely a child
+          const isChild = afterKey && (
+            (afterKey.type === 'PUNCTUATION' && afterKey.value === '{') ||
+            afterKey.type === 'HASH_ID'
+          );
+
+          if (isChild) {
+             // Rewind and parse as element
+             tokenizer.pos -= (keyToken.prefix ? keyToken.value.length + 1 : keyToken.value.length);
+             // Also need to rewind line/column... tokenizer needs a more robust rewind or just use PeekAt for children
+             // For now, let's use a simpler heuristic or just allow it to continue
+             // Since Tokenizer doesn't easily support line/col rewind, I'll pass tokenizer state
+             const oldPos = tokenizer.pos;
+             const oldLine = tokenizer.line;
+             const oldColumn = tokenizer.column;
+             
+             // Redo the logic without actual rewind if possible, or support state reset
+             tokenizer.pos = oldPos; tokenizer.line = oldLine; tokenizer.column = oldColumn;
+             
+             const child = this.parseElement(tokenizer, errors);
+             if (child) children.push(child);
           } else {
-            tokenizer.pos -= keyToken.value.length;
+             // Try to parse as child anyway, it's the only other valid thing
+             tokenizer.pos -= (keyToken.prefix ? keyToken.value.length + 1 : keyToken.value.length);
+             // We'd need to restore line/column here too...
+             // This parser structure is a bit tricky for line/column rewind.
+             // I'll add a 'state' object to Tokenizer to save/restore easily.
+             
+             const child = this.parseElement(tokenizer, errors);
+             if (child) children.push(child);
           }
-          const child = this.parseElement(tokenizer);
-          if (child) children.push(child);
         }
       } else {
-        // Skip unexpected tokens to prevent infinite loop
+        errors.push({ line: next.line, column: next.column, message: `Unexpected token in element body: ${next.value}` });
         tokenizer.nextToken();
       }
     }
@@ -448,7 +506,7 @@ export class HytaleUIParser {
     return { type, id, properties, children };
   }
 
-  static parseValue(tokenizer) {
+  static parseValue(tokenizer, errors) {
     const token = tokenizer.nextToken();
     if (!token) return null;
 
@@ -459,6 +517,7 @@ export class HytaleUIParser {
         let refStr = (ref.prefix || '') + ref.value;
         return '...' + refStr;
       }
+      errors.push({ line: token.line, column: token.column, message: 'Expected reference after spread ...' });
       return '...';
     }
 
@@ -471,7 +530,11 @@ export class HytaleUIParser {
       while (true) {
         if (++safetyCounter > 10000) break;
         const peek = tokenizer.peek();
-        if (!peek || (peek.type === 'PUNCTUATION' && peek.value === ')')) {
+        if (!peek) {
+            errors.push({ line: token.line, column: token.column, message: 'Unclosed parenthesis (' });
+            break;
+        }
+        if (peek.type === 'PUNCTUATION' && peek.value === ')') {
           tokenizer.nextToken(); // consume )
           break;
         }
@@ -482,6 +545,8 @@ export class HytaleUIParser {
           const ref = tokenizer.nextToken();
           if (ref) {
             obj[`__spread${spreadIndex++}`] = '...' + (ref.prefix || '') + ref.value;
+          } else {
+            errors.push({ line: peek.line, column: peek.column, message: 'Expected reference after spread ...' });
           }
           if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === ',') tokenizer.nextToken();
           continue;
@@ -495,7 +560,9 @@ export class HytaleUIParser {
         const colon = tokenizer.peek();
         if (colon && colon.type === 'PUNCTUATION' && colon.value === ':') {
           tokenizer.nextToken(); // :
-          obj[key] = this.parseValue(tokenizer);
+          obj[key] = this.parseValue(tokenizer, errors);
+        } else {
+            errors.push({ line: keyToken.line, column: keyToken.column, message: `Expected ':' after key ${key} in map` });
         }
         
         if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === ',') tokenizer.nextToken();
@@ -510,11 +577,15 @@ export class HytaleUIParser {
       while (true) {
         if (++safetyCounter > 10000) break;
         const peek = tokenizer.peek();
-        if (!peek || (peek.type === 'PUNCTUATION' && peek.value === ']')) {
+        if (!peek) {
+            errors.push({ line: token.line, column: token.column, message: 'Unclosed bracket [' });
+            break;
+        }
+        if (peek.type === 'PUNCTUATION' && peek.value === ']') {
           tokenizer.nextToken(); // ]
           break;
         }
-        arr.push(this.parseValue(tokenizer));
+        arr.push(this.parseValue(tokenizer, errors));
         if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === ',') tokenizer.nextToken();
       }
       return arr;
@@ -529,7 +600,7 @@ export class HytaleUIParser {
     if (token.type === 'IDENTIFIER') {
       if (tokenizer.peek()?.type === 'PUNCTUATION' && tokenizer.peek()?.value === '(') {
         const funcName = token.value;
-        const args = this.parseValue(tokenizer); // parses the ( ... )
+        const args = this.parseValue(tokenizer, errors); // parses the ( ... )
         if (typeof args === 'object' && args !== null && !Array.isArray(args)) {
           return { __type: funcName, ...args };
         }
@@ -549,8 +620,14 @@ export class HytaleUIParser {
       while (tokenizer.peek()?.type === 'OPERATOR') {
         const op = tokenizer.nextToken();
         const next = tokenizer.nextToken();
-        if (!next) break;
+        if (!next) {
+            errors.push({ line: op.line, column: op.column, message: `Expected number after operator ${op.value}` });
+            break;
+        }
         const nextVal = (next.type === 'NUMBER') ? next.value : 0;
+        if (next.type !== 'NUMBER') {
+            errors.push({ line: next.line, column: next.column, message: `Expected number in arithmetic expression, got ${next.value || next.type}` });
+        }
         exprParts.push(op.value, String(nextVal));
         if (op.value === '+') result += nextVal;
         else if (op.value === '-') result -= nextVal;

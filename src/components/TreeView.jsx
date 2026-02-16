@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, ChevronDown, MousePointer2, Box, Type, Image as ImageIcon } from 'lucide-react';
+import { ChevronRight, ChevronDown, MousePointer2, Box, Type, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const ElementIcon = ({ type }) => {
@@ -10,11 +10,14 @@ const ElementIcon = ({ type }) => {
   return <Box className="w-3.5 h-3.5" />;
 };
 
-const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete, onMove }) => {
+const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete, onMove, errors = [] }) => {
   const elKey = el.id || el.__uid;
   const isSelected = selectedIds.includes(elKey);
   const isExpanded = expandedIds.has(elKey);
   const hasChildren = el.children && el.children.length > 0;
+  
+  const elementErrors = errors.filter(e => e.elementId === elKey);
+  const hasErrors = elementErrors.length > 0;
   
   const handleItemClick = (e) => {
     e.stopPropagation();
@@ -91,7 +94,8 @@ const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggl
         className={clsx(
           "flex items-center gap-2 px-2 py-1 cursor-pointer rounded-md transition-colors text-xs font-medium group relative",
           isSelected ? "bg-hytale-accent text-black" : "hover:bg-white/5 text-hytale-text",
-          dropPosition === 'nest' && "bg-hytale-accent/20"
+          dropPosition === 'nest' && "bg-hytale-accent/20",
+          hasErrors && !isSelected && "text-red-400"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={handleItemClick}
@@ -106,6 +110,11 @@ const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggl
         </div>
         <ElementIcon type={el.type} />
         <span className="truncate flex-1">{el.id || el.type}</span>
+        {hasErrors && (
+            <div className="flex items-center gap-1 group/err p-1" title={elementErrors.map(e => e.message).join('\n')}>
+                <AlertCircle size={10} className="text-red-500 animate-pulse" />
+            </div>
+        )}
         <span className="ml-auto text-[10px] opacity-30 group-hover:opacity-100">{el.type}</span>
       </div>
       
@@ -122,6 +131,7 @@ const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggl
               onToggleExpand={onToggleExpand}
               onDelete={onDelete}
               onMove={onMove}
+              errors={errors}
             />
           ))}
         </div>
@@ -130,7 +140,7 @@ const TreeItem = ({ el, depth, selectedIds, expandedIds, onToggleSelect, onToggl
   );
 };
 
-export const TreeView = ({ root, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete, onMove }) => {
+export const TreeView = ({ root, selectedIds, expandedIds, onToggleSelect, onToggleExpand, onDelete, onMove, errors = [] }) => {
   if (!root) return <div className="p-4 text-xs text-hytale-muted italic">No root element</div>;
 
   return (
@@ -144,6 +154,7 @@ export const TreeView = ({ root, selectedIds, expandedIds, onToggleSelect, onTog
         onToggleExpand={onToggleExpand}
         onDelete={onDelete} 
         onMove={onMove}
+        errors={errors}
       />
     </div>
   );

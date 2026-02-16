@@ -8,6 +8,8 @@ import { HytaleRenderer } from './components/Renderer';
 import { SourceEditor } from './components/SourceEditor';
 
 import { HytaleUIParser } from './lib/hytale-ui/parser';
+import { HytaleUIValidator } from './lib/hytale-ui/validator';
+import { VariableEditor } from './components/VariableEditor';
 
 // ---- Component Palette Items (used by the + dropdown) ----
 const PALETTE_ITEMS = [
@@ -36,7 +38,7 @@ function App() {
     const { 
         doc, selectedIds, expandedIds, gridSettings,
         setFullDoc, toggleSelectedId, toggleExpandedId, setGridSettings,
-        updateElement, addElement, deleteElement, moveElement, serialize, serializeWithOffsets, loadHytaleData, undo, redo, _undoStack, _redoStack
+        updateElement, updateVariable, addElement, deleteElement, moveElement, serialize, serializeWithOffsets, loadHytaleData, undo, redo, _undoStack, _redoStack
     } = useEditorStore();
 
     const [bgMode, setBgMode] = useState('ui'); // 'ui', 'clean', 'flat'
@@ -51,19 +53,31 @@ function App() {
   const [addDropdownOpen, setAddDropdownOpen] = useState(false);
   const [sourceText, setSourceText] = useState('');
   const [sourceOffsets, setSourceOffsets] = useState({});
-  const [sourceError, setSourceError] = useState(null);
+  const [errors, setErrors] = useState([]); // Combined parser and validator errors
+  const [sourceError, setSourceError] = useState(null); // Keep for legacy or general messages
+  const [sidebarWidth, setSidebarWidth] = useState(288); // Default 72 * 4 = 288px
+  const [isResizing, setIsResizing] = useState(false);
+  
   const sourceRef = useRef(null);
   const addBtnRef = useRef(null);
   const canvasRef = useRef(null);
   const viewportRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Zoom Handler
-  const handleWheel = (e) => {
+  // Zoom Handler - attached manually with passive: false to allow preventDefault
+  const handleWheel = useCallback((e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setZoom(z => Math.max(0.1, Math.min(5, z * delta)));
-  };
+  }, []);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (el) {
+      el.addEventListener('wheel', handleWheel, { passive: false });
+      return () => el.removeEventListener('wheel', handleWheel);
+    }
+  }, [handleWheel]);
 
   // Pan Handlers
   const handleViewportMouseDown = (e) => {
@@ -121,15 +135,53 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo, toggleSelectedId]);
 
-  // Sync source text when switching to Source tab or when doc changes
+  // Handle sidebar resizing
+  const startResizing = useCallback((e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((e) => {
+    if (isResizing) {
+      const newWidth = e.clientX;
+      if (newWidth >= 200 && newWidth <= 600) {
+        setSidebarWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
   useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    } else {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
+  // Global Validation Sync
+  useEffect(() => {
+    const validatorErrors = HytaleUIValidator.validate(doc);
+    
     if (leftPanelMode === 'source') {
       const result = serializeWithOffsets();
       setSourceText(result.code);
       setSourceOffsets(result.offsets);
-      setSourceError(null);
+      const { errors: parserErrors } = HytaleUIParser.parse(result.code);
+      setErrors([...parserErrors, ...validatorErrors]);
+    } else {
+      setErrors(validatorErrors);
     }
-  }, [leftPanelMode, doc, serializeWithOffsets]);
+  }, [doc, leftPanelMode, serializeWithOffsets]);
 
   const handleImport = () => {
     if (fileInputRef.current) {
@@ -145,13 +197,21 @@ function App() {
     reader.onload = (event) => {
       const content = event.target.result;
       try {
-        const parsedDoc = HytaleUIParser.parse(content);
+        const { doc: parsedDoc, errors: parserErrors } = HytaleUIParser.parse(content);
+        const validatorErrors = HytaleUIValidator.validate(parsedDoc);
+        
         setFullDoc(parsedDoc);
+        setErrors([...parserErrors, ...validatorErrors]);
+        
+        if (parserErrors.length > 0 || validatorErrors.length > 0) {
+            console.warn("Imported with errors:", [...parserErrors, ...validatorErrors]);
+        }
+
         // Clear input so same file can be imported again
         e.target.value = '';
       } catch (err) {
         console.error(err);
-        alert("Failed to parse .ui file: " + err.message);
+        setErrors([{ message: "Failed to parse .ui file: " + err.message }]);
       }
     };
     reader.readAsText(file);
@@ -273,11 +333,24 @@ function App() {
 
   const handleSourceApply = () => {
     try {
-      const parsedDoc = HytaleUIParser.parse(sourceText);
-      setFullDoc(parsedDoc);
-      setSourceError(null);
+      const { doc: parsedDoc, errors: parserErrors } = HytaleUIParser.parse(sourceText);
+      const validatorErrors = HytaleUIValidator.validate(parsedDoc);
+      
+      const combinedErrors = [...parserErrors, ...validatorErrors];
+      setErrors(combinedErrors);
+      
+      if (parserErrors.length === 0) {
+        setFullDoc(parsedDoc);
+      }
+      
+      if (combinedErrors.length === 0) {
+        setSourceError(null);
+      } else {
+        setSourceError(`${combinedErrors.length} error(s) found`);
+      }
     } catch (e) {
       setSourceError(e.message || "Parse error");
+      setErrors([{ message: e.message || "Unknown error" }]);
     }
   };
 
@@ -304,7 +377,18 @@ function App() {
         onChange={handleFileChange}
       />
       {/* Sidebar - Hierarchy & Source */}
-      <aside className="w-72 border-r border-white/10 bg-hytale-sidebar flex flex-col">
+      <aside 
+        style={{ width: `${sidebarWidth}px` }} 
+        className="border-r border-white/10 bg-hytale-sidebar flex flex-col relative shrink-0"
+      >
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={startResizing}
+          className={clsx(
+            "absolute top-0 right-0 w-1 h-full cursor-col-resize z-50 hover:bg-hytale-accent/50 transition-colors",
+            isResizing && "bg-hytale-accent"
+          )}
+        />
         <header className="p-4 border-b border-white/10 bg-white/5">
              {/* Tabs: Hierarchy | Source */}
              <div className="flex items-center gap-2 mb-4 bg-black/20 p-1 rounded-lg">
@@ -313,12 +397,18 @@ function App() {
                     className={clsx("flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-widest rounded transition-all", leftPanelMode === 'hierarchy' ? "bg-hytale-accent text-black" : "text-hytale-muted hover:text-white")}
                  >Hierarchy</button>
                  <button 
+                    onClick={() => setLeftPanelMode('variables')}
+                    className={clsx("flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-widest rounded transition-all flex items-center justify-center gap-1", leftPanelMode === 'variables' ? "bg-hytale-accent text-black" : "text-hytale-muted hover:text-white")}
+                 >Variables</button>
+                 <button 
                     onClick={() => setLeftPanelMode('source')}
                     className={clsx("flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-widest rounded transition-all flex items-center justify-center gap-1", leftPanelMode === 'source' ? "bg-hytale-accent text-black" : "text-hytale-muted hover:text-white")}
                  ><Code className="w-3 h-3"/>Source</button>
              </div>
              <div className="flex items-center justify-between">
-                <h2 className="font-bold text-hytale-accent tracking-[0.2em] uppercase text-[10px]">{leftPanelMode === 'hierarchy' ? 'Structure' : 'Source Code'}</h2>
+                <h2 className="font-bold text-hytale-accent tracking-[0.2em] uppercase text-[10px]">
+                    {leftPanelMode === 'hierarchy' ? 'Structure' : leftPanelMode === 'variables' ? 'Global Vars' : 'Source Code'}
+                </h2>
                 {leftPanelMode === 'hierarchy' && (
                   <div className="flex gap-1">
                       {/* + Dropdown */}
@@ -371,8 +461,15 @@ function App() {
                 onToggleExpand={toggleExpandedId}
                 onDelete={deleteElement} 
                 onMove={moveElement}
+                errors={errors}
               />
-           ) : (
+           ) : leftPanelMode === 'variables' ? (
+                <VariableEditor 
+                    variables={doc.variables} 
+                    onUpdate={updateVariable} 
+                    errors={errors}
+                />
+            ) : (
               <div className="flex flex-col h-full">
                 <SourceEditor 
                    code={sourceText}
@@ -479,7 +576,6 @@ function App() {
             onMouseUp={handleViewportMouseUp}
             onMouseLeave={handleViewportMouseUp}
             onContextMenu={handleContextMenu}
-            onWheel={handleWheel}
         >
             <div 
               style={{ 
@@ -498,6 +594,7 @@ function App() {
                     onUpdate={updateElement}
                     bgMode={bgMode}
                     zoom={zoom}
+                    errors={errors}
                 />
             </div>
 
@@ -531,11 +628,23 @@ function App() {
         <footer className="h-8 border-t border-white/10 bg-hytale-sidebar flex items-center px-4 justify-between select-none">
           <div className="flex items-center gap-3 text-[9px] text-hytale-muted font-bold uppercase tracking-widest">
              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
-                <span>Compiler: Ready</span>
+                <div className={clsx(
+                    "w-1.5 h-1.5 rounded-full shadow-[0_0_5px_rgba(34,197,94,0.5)]",
+                    errors.length > 0 ? "bg-red-500 shadow-red-500/50" : "bg-green-500 shadow-green-500/50"
+                )} />
+                <span>Compiler: {errors.length > 0 ? `${errors.length} ERROR(S)` : 'Ready'}</span>
              </div>
              <div className="w-px h-2 bg-white/10" />
              <span>Hytale Schema: 1.2.4</span>
+             {errors.length > 0 && (
+                 <>
+                    <div className="w-px h-2 bg-white/10" />
+                    <div className="flex items-center gap-2 text-red-500 animate-pulse">
+                        <AlertCircle size={10} />
+                        <span className="max-w-[300px] truncate">{errors[0].message} {errors[0].line ? `(Line ${errors[0].line})` : ''}</span>
+                    </div>
+                 </>
+             )}
           </div>
 
           {/* Navigation Controls Guide */}
@@ -643,7 +752,9 @@ function App() {
                             return find(doc.root);
                         }).filter(Boolean)}
                         onUpdate={updateElement}
+                        onVariableUpdate={updateVariable}
                         variables={doc.variables}
+                        errors={errors}
                     />
                 </div>
       </aside>

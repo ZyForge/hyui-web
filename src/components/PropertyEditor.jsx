@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Settings, Layout, Plus, X, ChevronDown, Lock, Unlock } from 'lucide-react';
+import { Settings, Settings2, Layout, Plus, X, ChevronDown, Lock, Unlock, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
 // Known Hytale predefined styles (from Common.ui docs & Syntax Rules)
@@ -24,8 +24,26 @@ const SCHEMA_DEFINITIONS = {
   'Label': {
     'Text': { type: 'string', default: '' },
     'Style': { type: 'style', subkeys: ['FontSize', 'TextColor', 'RenderUppercase', 'HorizontalAlignment', 'VerticalAlignment', 'Bold'], default: { FontSize: 16, TextColor: '#96a9be' } },
-    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: {} },
+    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right', 'Scale'], default: {} },
     'Visible': { type: 'boolean', default: true },
+  },
+  'Image': {
+    'TexturePath': { type: 'string', default: '' },
+    'Style': { type: 'object', subkeys: ['HorizontalAlignment', 'VerticalAlignment'], default: {} },
+    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: {} },
+  },
+  'ProgressBar': {
+    'Value': { type: 'number', default: 0.5 },
+    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: { Width: 200, Height: 20 } },
+  },
+  'Button': {
+    'Style': { type: 'object', subkeys: ['HorizontalAlignment', 'VerticalAlignment'], default: {} },
+    '@Text': { type: 'string', default: 'Button' },
+    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: { Width: 172, Height: 44 } },
+  },
+  'Sprite': {
+    'TexturePath': { type: 'string', default: '' },
+    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: {} },
   },
   '$C.@TextButton': {
     '@Text': { type: 'string', default: 'Button' },
@@ -35,12 +53,10 @@ const SCHEMA_DEFINITIONS = {
   '$C.@SecondaryTextButton': {
     '@Text': { type: 'string', default: 'Button' },
     'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: { Width: 172, Height: 44 } },
-    '@Sounds': { type: 'string', default: '' },
   },
   '$C.@CancelTextButton': {
     '@Text': { type: 'string', default: 'Cancel' },
     'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: { Width: 172, Height: 44 } },
-    '@Sounds': { type: 'string', default: '' },
   },
   '$C.@TextField': {
     'PlaceholderText': { type: 'string', default: '' },
@@ -72,13 +88,6 @@ const SCHEMA_DEFINITIONS = {
   '$C.@Panel': {
     'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: {} },
   },
-  '$C.@PageOverlay': {
-    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: {} },
-  },
-  '$C.@ContentSeparator': {
-    'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: {} },
-  },
-  '$C.@VerticalSeparator': {},
   '$C.@Title': {
     '@Text': { type: 'string', default: '' },
     '@Alignment': { type: 'select', options: ['Start', 'Center', 'End'] },
@@ -91,9 +100,13 @@ const SCHEMA_DEFINITIONS = {
 
 // --- Style Reference Field ---
 // When a style value is a string reference like "@HeaderStyle", render read-only with an Edit button
-const StyleReferenceField = ({ label, value, onChange, onRemove, schema, variables }) => {
+// --- Style Reference Field ---
+function StyleReferenceField({ label, value, onChange, onRemove, schema, variables, onVariableUpdate, errors = [] }) {
+  const [isEditingSource, setIsEditingSource] = useState(false);
   const refName = value; // e.g. "@HeaderStyle"
-  const resolvedProps = KNOWN_STYLE_PRESETS[refName] || (variables && variables[refName.substring(1)]) || null;
+  const varKey = refName.substring(1);
+  const resolvedProps = KNOWN_STYLE_PRESETS[refName] || (variables && variables[varKey]) || null;
+  const isLocalVar = variables && variables[varKey] !== undefined;
 
   return (
     <div className="space-y-2 border-l-2 border-hytale-accent/20 pl-3 mt-4 first:mt-0">
@@ -103,36 +116,73 @@ const StyleReferenceField = ({ label, value, onChange, onRemove, schema, variabl
           {onRemove && <button onClick={onRemove} className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-500/20 rounded text-red-500 transition-all"><X className="w-3 h-3"/></button>}
         </div>
       </div>
-      <div className="flex items-center gap-2 bg-black/20 border border-white/5 rounded px-3 py-1.5">
-        <Lock className="w-3 h-3 text-hytale-accent/40 flex-shrink-0" />
+      
+      <div className={clsx(
+          "flex items-center gap-2 bg-black/20 border rounded px-3 py-1.5 transition-all",
+          isEditingSource ? "border-hytale-accent/50 bg-hytale-accent/5 shadow-[0_0_15px_rgba(var(--hytale-accent-rgb),0.1)]" : "border-white/5"
+      )}>
+        <Lock className={clsx("w-3 h-3 flex-shrink-0 transition-colors", isEditingSource ? "text-hytale-accent" : "text-hytale-accent/40")} />
         <span className="text-xs font-mono text-hytale-accent flex-1">{refName}</span>
+        {isEditingSource && (
+            <button onClick={() => setIsEditingSource(false)} className="p-1 hover:bg-white/10 rounded transition-colors text-hytale-muted hover:text-white">
+                <Settings2 className="w-3 h-3" />
+            </button>
+        )}
       </div>
-      {resolvedProps && (
+
+      {!isEditingSource && resolvedProps && (
         <div className="space-y-1 pl-2 opacity-60">
           {Object.entries(resolvedProps).map(([k, v]) => (
             <div key={k} className="flex items-center justify-between">
               <span className="text-[9px] text-hytale-muted uppercase tracking-wider">{k}</span>
-              <span className="text-[10px] text-hytale-text font-mono">{String(v)}</span>
+              <span className="text-[10px] text-hytale-text font-mono text-right truncate ml-2">{String(v)}</span>
             </div>
           ))}
         </div>
       )}
-      <button
-        onClick={() => {
-          // Detach from reference: replace string with the resolved object
-          const detached = resolvedProps ? { ...resolvedProps } : (schema?.default || {});
-          onChange(detached);
-        }}
-        className="text-[9px] uppercase font-bold text-yellow-500/70 hover:text-yellow-400 transition-colors flex items-center gap-1 mt-1"
-      >
-        <Unlock className="w-3 h-3" /> Detach & Edit Inline
-      </button>
+
+      {isEditingSource && isLocalVar && (
+          <div className="space-y-4 pl-2 pt-2 border-t border-white/5 bg-white/5 rounded-b-lg p-3">
+              <div className="text-[8px] font-black text-hytale-accent uppercase tracking-[0.2em] mb-3">Editing Source @{varKey}</div>
+              <ObjectPropertyField 
+                label={varKey}
+                value={variables[varKey]}
+                onChange={(newVal) => onVariableUpdate(varKey, newVal)}
+                schema={schema} // Inherit schema for the style object
+                errors={errors} // Propagation: errors for this variable
+              />
+          </div>
+      )}
+
+      <div className="flex flex-col gap-2 pt-1 border-t border-white/5 mt-2">
+        {!isEditingSource && (
+            <button
+                onClick={() => {
+                const detached = resolvedProps ? { ...resolvedProps } : (schema?.default || {});
+                onChange(detached);
+                }}
+                className="text-[9px] uppercase font-bold text-yellow-500/70 hover:text-yellow-400 transition-colors flex items-center gap-1.5"
+            >
+                <Unlock className="w-3 h-3" /> Detach & Edit Inline
+            </button>
+        )}
+
+        {isLocalVar && onVariableUpdate && !isEditingSource && (
+            <button
+                onClick={() => setIsEditingSource(true)}
+                className="text-[9px] uppercase font-bold text-hytale-accent/70 hover:text-hytale-accent transition-colors flex items-center gap-1.5"
+            >
+                <Settings className="w-3 h-3" /> Edit Source Variable (@{varKey})
+            </button>
+        )}
+      </div>
     </div>
   );
-};
+}
 
 // --- Object Property Field ---
-const ObjectPropertyField = ({ label, value, onChange, onRemove, schema }) => {
+// --- Object Property Field ---
+function ObjectPropertyField({ label, value, onChange, onRemove, schema, errors = [], allErrors = [], onVariableUpdate, variables }) {
   const [addSubkeyOpen, setAddSubkeyOpen] = useState(false);
   const objectValue = (typeof value === 'object' && value !== null && !Array.isArray(value)) ? value : (schema ? schema.default : {}) || {};
   const availableSubkeys = (schema?.subkeys || []).filter(k => objectValue[k] === undefined);
@@ -155,6 +205,10 @@ const ObjectPropertyField = ({ label, value, onChange, onRemove, schema }) => {
               delete newObj[k];
               onChange(newObj);
             }}
+            errors={errors} // Pass errors down to sub-properties
+            allErrors={allErrors}
+            onVariableUpdate={onVariableUpdate}
+            variables={variables}
           />
         ))}
         {/* Add sub-property dropdown */}
@@ -187,18 +241,26 @@ const ObjectPropertyField = ({ label, value, onChange, onRemove, schema }) => {
       </div>
     </div>
   );
-};
+}
 
-const PropertyField = ({ label, value, onChange, onRemove, schema, variables }) => {
+export function PropertyField({ label, value, schema, onChange, onRemove, errors = [], variables, allErrors = [], onVariableUpdate }) {
+  const fieldErrors = errors.filter(e => {
+    // Match exact word to avoid overlap (e.g. Alignment vs HorizontalAlignment)
+    const regex = new RegExp(`\\b${label}\\b`, 'i');
+    return regex.test(e.message);
+  });
+  const hasError = fieldErrors.length > 0;
+
   // Style reference handling: value is a string but schema says 'style' or 'object'
   if (typeof value === 'string' && (schema?.type === 'style' || schema?.type === 'object')) {
-    return <StyleReferenceField label={label} value={value} onChange={onChange} onRemove={onRemove} schema={schema} variables={variables} />;
+    const varErrors = allErrors.filter(e => e.elementId === value);
+    return <StyleReferenceField label={label} value={value} onChange={onChange} onRemove={onRemove} schema={schema} variables={variables} onVariableUpdate={onVariableUpdate} errors={varErrors} />;
   }
 
   const isObject = (typeof value === 'object' && value !== null && !Array.isArray(value)) || (schema && (schema.type === 'object' || schema.type === 'style'));
 
   if (isObject) {
-    return <ObjectPropertyField label={label} value={value} onChange={onChange} onRemove={onRemove} schema={schema} />;
+    return <ObjectPropertyField label={label} value={value} onChange={onChange} onRemove={onRemove} schema={schema} errors={errors} allErrors={allErrors} onVariableUpdate={onVariableUpdate} variables={variables} />;
   }
 
   return (
@@ -208,48 +270,71 @@ const PropertyField = ({ label, value, onChange, onRemove, schema, variables }) 
         {onRemove && <button onClick={onRemove} className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-500/20 rounded text-red-500 transition-all"><X className="w-3 h-3"/></button>}
       </div>
 
-      {schema?.type === 'select' ? (
-        <select
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs text-hytale-text focus:border-hytale-accent/50 outline-none transition-all appearance-none"
-        >
-          <option value="" disabled>Select {label}</option>
-          {schema.options.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
+      {(schema?.type === 'select' || label === 'HorizontalAlignment' || label === 'VerticalAlignment' || label === 'LayoutMode' || label === '@Alignment') ? (
+        <div className="relative">
+            {(() => {
+                const options = (schema?.options || (label === 'LayoutMode' ? ['Top', 'Bottom', 'Left', 'Center', 'Right', 'TopScrolling', 'LeftCenterWrap', 'Middle'] : ['Start', 'Center', 'End']));
+                // If value is invalid (not in options and not a variable), force empty to show "Select..." placeholder
+                const displayValue = (value && !options.includes(value) && !String(value).startsWith('@')) ? '' : (value || '');
+                
+                return (
+                    <select
+                        value={displayValue}
+                        onChange={(e) => onChange(e.target.value)}
+                        className={clsx(
+                            "w-full bg-black/40 border rounded px-3 py-1.5 text-xs text-hytale-text focus:border-hytale-accent/50 outline-none transition-all appearance-none pr-8",
+                            hasError ? "border-red-500/50 bg-red-500/5" : "border-white/10"
+                        )}
+                    >
+                        <option value="" disabled>Select {label}...</option>
+                        {options.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                );
+            })()}
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-hytale-muted pointer-events-none" />
+        </div>
       ) : (typeof value === 'boolean' || (schema && schema.type === 'boolean')) ? (
         <button
           onClick={() => onChange(!value)}
           className={clsx(
             "w-full px-3 py-1.5 rounded border text-xs font-bold transition-all",
-            value ? "bg-hytale-accent border-hytale-accent text-black" : "bg-white/5 border-white/10 text-hytale-muted"
+            value ? "bg-hytale-accent border-hytale-accent text-black" : "bg-white/5 border-white/10 text-hytale-muted",
+            hasError && "border-red-500/50 bg-red-500/5"
           )}
         >
           {value ? 'TRUE' : 'FALSE'}
         </button>
       ) : (
         <input
-          type={typeof value === 'number' || schema?.type === 'number' ? 'number' : 'text'}
-          value={(value === null || value === undefined) ? '' : value}
+          type={typeof value === 'number' || (schema && schema.type === 'number') ? 'number' : 'text'}
+          value={value === undefined || value === null ? '' : value}
           placeholder={schema?.default !== undefined ? String(schema.default) : ''}
           onChange={(e) => {
-            let val = e.target.value;
-            if (typeof value === 'number' || schema?.type === 'number') val = parseFloat(val) || 0;
-            if (val === 'true') val = true;
-            if (val === 'false') val = false;
-            if (val === 'null') val = null;
+            const val = e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value;
             onChange(val);
           }}
-          className="w-full bg-black/40 border border-white/10 rounded px-3 py-1.5 text-xs text-hytale-text focus:border-hytale-accent/50 outline-none transition-all placeholder:text-white/10"
+          className={clsx(
+              "w-full bg-black/40 border rounded px-3 py-1.5 text-xs text-hytale-text focus:border-hytale-accent/50 outline-none transition-all placeholder:text-white/10",
+              hasError ? "border-red-500/50 bg-red-500/5" : "border-white/10"
+          )}
         />
       )}
-    </div>
-  );
-};
 
-export const PropertyEditor = ({ elements, onUpdate, variables }) => {
+      {hasError && (
+          <div className="mt-1 flex items-start gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg animate-in fade-in slide-in-from-top-1 duration-200">
+              <AlertCircle size={10} className="text-red-500 mt-0.5 flex-shrink-0" strokeWidth={3} />
+              <div className="text-[9px] text-red-400 font-bold italic leading-relaxed break-words">
+                  {fieldErrors.map((err, i) => <div key={i}>{err.message}</div>)}
+              </div>
+          </div>
+      )}
+    </div>
+);
+}
+
+export const PropertyEditor = ({ elements, onUpdate, variables, errors = [], onVariableUpdate }) => {
   const [addPropOpen, setAddPropOpen] = useState(false);
 
   const isMulti = Array.isArray(elements) && elements.length > 1;
@@ -379,19 +464,23 @@ export const PropertyEditor = ({ elements, onUpdate, variables }) => {
         </div>
 
         <div className="space-y-4">
-          {Object.entries(mergedProperties).map(([key, value]) => (
-            value !== undefined ? (
+          {Object.entries(mergedProperties).map(([key, value]) => {
+            const elementErrors = errors.filter(e => e.elementId === element.id || e.elementId === element.__uid);
+            return value !== undefined ? (
               <PropertyField
                 key={key}
                 label={key}
                 value={value}
                 schema={getSchema(key)}
                 variables={variables}
+                allErrors={errors}
+                onVariableUpdate={onVariableUpdate}
+                errors={elementErrors}
                 onChange={(val) => handlePropertyChange(key, val)}
                 onRemove={() => removeProperty(key)}
               />
             ) : null
-          ))}
+          })}
 
           {Object.values(mergedProperties).every(v => v === undefined) && (
             <div className="text-[10px] text-hytale-muted/40 italic py-4 text-center border border-dashed border-white/5 rounded">
