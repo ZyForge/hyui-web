@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { Settings, Settings2, Layout, Plus, X, ChevronDown, Lock, Unlock, AlertCircle, Type, Code } from 'lucide-react';
 import { clsx } from 'clsx';
+import { HytaleUIParser, HytaleUISerializer } from '../lib/hytale-ui/parser';
 
 /**
  * A custom Source Editor that provides syntax highlighting and 
@@ -73,7 +75,7 @@ export const SourceEditor = ({ code, offsets, selectedIds, onChange, onApply }) 
             const after = code.substring(end);
 
             result = processChunk(before, 0) + 
-                     `<span class="bg-hytale-accent/30 text-white rounded-[2px] shadow-[0_0_0_1px_rgba(var(--hytale-accent-rgb),0.5)] ring-1 ring-hytale-accent/50 z-0 relative px-0.5 -mx-0.5">${processChunk(selection, start)}</span>` + 
+                     `<span class="bg-hytale-accent/20 text-white rounded-sm ring-1 ring-hytale-accent/30 z-0 relative px-0.5 -mx-0.5 inline-block" style="box-decoration-break: clone; -webkit-box-decoration-break: clone;">${processChunk(selection, start)}</span>` + 
                      processChunk(after, end);
         } else {
             result = processChunk(code, 0);
@@ -113,46 +115,89 @@ export const SourceEditor = ({ code, offsets, selectedIds, onChange, onApply }) 
         textareaRef.current.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
     }, [selectionOffset, code]);
 
+    const handleFormat = () => {
+        try {
+            const { doc, errors } = HytaleUIParser.parse(code);
+            // Even if there are errors, we try to serialize what we got
+            const formatted = HytaleUISerializer.serialize(doc);
+            onChange(formatted);
+        } catch (err) {
+            console.error("Formatting failed:", err);
+        }
+    };
+
+    const lineNumbers = code.split('\n').length;
+
     return (
         <div className="relative flex-1 flex flex-col min-h-0 bg-black/40 border border-white/10 rounded overflow-hidden group">
             {/* Editor Layers */}
-            <div className="relative flex-1 min-h-0 overflow-hidden font-mono text-[11px]">
+            <div className="relative flex-1 min-h-0 overflow-hidden font-mono text-[11px] flex">
                 
-                {/* 1. Highlighted Code Display (also contains selection background now) */}
-                <pre 
-                    ref={preRef}
-                    aria-hidden="true"
-                    className={clsx(
-                        "absolute inset-0 p-3 m-0 pointer-events-none overflow-hidden z-10",
-                        isWrapped ? "whitespace-pre-wrap break-all" : "whitespace-pre"
-                    )}
+                {/* 0. Line Numbers Gutter */}
+                <div 
+                    className="w-10 bg-black/20 border-r border-white/5 flex flex-col items-end px-2 pt-3 select-none text-hytale-muted/30 font-mono pointer-events-none"
                     style={{ lineHeight: `${LINE_HEIGHT}px` }}
-                    dangerouslySetInnerHTML={{ __html: highlightedCode + '\n\n' }}
-                />
+                >
+                    {Array.from({ length: lineNumbers }).map((_, i) => (
+                        <div key={i}>{i + 1}</div>
+                    ))}
+                </div>
 
-                {/* 2. Transparent Input Layer */}
-                <textarea
-                    ref={textareaRef}
-                    value={code}
-                    onChange={(e) => onChange(e.target.value)}
-                    onScroll={handleScroll}
-                    spellCheck={false}
-                    className={clsx(
-                        "absolute inset-0 w-full h-full p-3 m-0 bg-transparent text-transparent caret-hytale-accent resize-none outline-none z-20 overflow-auto custom-scrollbar",
-                        isWrapped ? "whitespace-pre-wrap break-all" : "whitespace-pre"
-                    )}
-                    style={{ 
-                        WebkitTextFillColor: 'transparent',
-                        lineHeight: `${LINE_HEIGHT}px`
-                    }}
-                />
+                <div className="relative flex-1 overflow-hidden">
+                    {/* 1. Highlighted Code Display (also contains selection background and indent guides now) */}
+                    <pre 
+                        ref={preRef}
+                        aria-hidden="true"
+                        className={clsx(
+                            "absolute inset-0 p-3 pt-3 m-0 pointer-events-none overflow-hidden z-10",
+                            isWrapped ? "whitespace-pre-wrap break-words" : "whitespace-pre"
+                        )}
+                        style={{ 
+                            lineHeight: `${LINE_HEIGHT}px`,
+                            paddingLeft: isWrapped ? '32px' : '12px',
+                            textIndent: isWrapped ? '-20px' : '0',
+                            backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px)`,
+                            backgroundSize: '4ch 100%',
+                            backgroundPosition: '12px 0'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: highlightedCode + '\n\n' }}
+                    />
+
+                    {/* 2. Transparent Input Layer */}
+                    <textarea
+                        ref={textareaRef}
+                        value={code}
+                        onChange={(e) => onChange(e.target.value)}
+                        onScroll={handleScroll}
+                        spellCheck={false}
+                        className={clsx(
+                            "absolute inset-0 w-full h-full p-3 pt-3 m-0 bg-transparent text-transparent caret-hytale-accent resize-none outline-none z-20 overflow-auto custom-scrollbar",
+                            isWrapped ? "whitespace-pre-wrap break-words" : "whitespace-pre"
+                        )}
+                        style={{ 
+                            WebkitTextFillColor: 'transparent',
+                            lineHeight: `${LINE_HEIGHT}px`,
+                            paddingLeft: isWrapped ? '32px' : '12px',
+                            textIndent: isWrapped ? '-20px' : '0'
+                        }}
+                    />
+                </div>
             </div>
 
             {/* Controls */}
             <div className="p-2 border-t border-white/10 bg-black/20 flex items-center justify-between">
-                <div className="flex flex-col">
-                    <span className="text-[9px] text-hytale-muted uppercase tracking-widest font-bold">Source Editor - {code.length} chars</span>
-                    <span className="text-[8px] text-hytale-muted/50 uppercase font-bold">Alt+Z: Wrap {isWrapped ? 'ON' : 'OFF'}</span>
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                        <span className="text-[9px] text-hytale-muted uppercase tracking-widest font-bold">Source Editor - {code.length} chars</span>
+                        <span className="text-[8px] text-hytale-muted/50 uppercase font-bold">Alt+Z: Wrap {isWrapped ? 'ON' : 'OFF'}</span>
+                    </div>
+                    <button
+                        onClick={handleFormat}
+                        className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[9px] text-hytale-muted uppercase font-black tracking-widest transition-all hover:text-white"
+                        title="Auto-format code using Hytale UI rules"
+                    >
+                        <Code className="w-3 h-3" /> Format Code
+                    </button>
                 </div>
                 <button
                   onClick={onApply}

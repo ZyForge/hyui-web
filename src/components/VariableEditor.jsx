@@ -23,7 +23,7 @@ export const VariableEditor = ({ variables, onUpdate, errors = [] }) => {
                         return (
                             <div key={name} className={clsx(
                                 "group bg-black/30 border rounded-xl transition-all duration-200 overflow-hidden shadow-lg",
-                                hasError ? "border-red-500/50 bg-red-500/5" : "border-white/5 hover:border-white/10"
+                                hasError ? "border-red-500/50" : "border-white/5 hover:border-white/10"
                             )}>
                                 {/* Variable Header */}
                                 <div className="px-4 py-2 bg-white/5 flex items-center justify-between">
@@ -37,7 +37,7 @@ export const VariableEditor = ({ variables, onUpdate, errors = [] }) => {
                                         </span>
                                     </div>
                                     {hasError && (
-                                        <div className="flex items-center gap-1.5 text-[8px] font-black text-red-400 uppercase tracking-tighter animate-pulse">
+                                        <div className="flex items-center gap-1.5 text-[8px] font-black text-red-500 uppercase tracking-tighter">
                                             <AlertCircle size={10} />
                                             <span>Invalid Value</span>
                                         </div>
@@ -51,6 +51,8 @@ export const VariableEditor = ({ variables, onUpdate, errors = [] }) => {
                                             label="Value"
                                             value={value}
                                             onChange={(val) => onUpdate(name, val)}
+                                            errors={varErrors}
+                                            allErrors={errors}
                                             schema={typeof value === 'object' && value !== null && value.__type === 'LabelStyle' ? {
                                                 type: 'style',
                                                 subkeys: ['FontSize', 'TextColor', 'RenderUppercase', 'HorizontalAlignment', 'VerticalAlignment', 'Bold']
@@ -62,7 +64,7 @@ export const VariableEditor = ({ variables, onUpdate, errors = [] }) => {
                                     {hasError && (
                                         <div className="pt-3 border-t border-red-500/20 space-y-2">
                                             {varErrors.map((err, i) => (
-                                                <div key={i} className="flex items-start gap-1.5 text-[9px] text-red-400 font-bold italic leading-relaxed break-words whitespace-normal">
+                                                <div key={i} className="flex items-start gap-1.5 text-[9px] text-red-400/80 font-bold italic leading-relaxed break-words whitespace-normal">
                                                     <span className="text-red-500 flex-shrink-0">•</span>
                                                     <span>{err.message}</span>
                                                 </div>

@@ -28,7 +28,7 @@ export class HytaleUISerializer {
     // Variables
     const varKeys = Object.keys(doc.variables || {});
     for (const [name, value] of Object.entries(doc.variables || {})) {
-      ctx.output += `@${name} = ${this.serializeValue(value)};\n`;
+      ctx.output += `@${name} = ${this.serializeValue(value, 0)};\n`;
     }
     if (varKeys.length > 0) ctx.output += '\n';
 
@@ -55,7 +55,7 @@ export class HytaleUISerializer {
     // Properties
     for (const [key, value] of Object.entries(el.properties || {})) {
       const sep = key.startsWith('@') ? ' =' : ':';
-      ctx.output += `${nextIndent}${key}${sep} ${this.serializeValue(value)};\n`;
+      ctx.output += `${nextIndent}${key}${sep} ${this.serializeValue(value, indentLevel + 1)};\n`;
     }
 
     // Children
@@ -75,7 +75,7 @@ export class HytaleUISerializer {
     }
   }
 
-  static serializeValue(value) {
+  static serializeValue(value, indentLevel = 0) {
     if (value === null) return 'null';
     if (typeof value === 'boolean') return value ? 'true' : 'false';
     if (typeof value === 'number') return String(value);
@@ -97,22 +97,38 @@ export class HytaleUISerializer {
     }
     
     if (typeof value === 'object') {
+      const indent = '    '.repeat(indentLevel);
+      const nextIndent = '    '.repeat(indentLevel + 1);
+
       if (Array.isArray(value)) {
-        return `[${value.map(v => this.serializeValue(v)).join(', ')}]`;
+        if (value.length === 0) return '[]';
+        const items = value.map(v => this.serializeValue(v, indentLevel + 1));
+        // For short arrays, keep on one line; for longer ones, multi-line
+        if (items.join(', ').length < 40) return `[${items.join(', ')}]`;
+        return `[\n${items.map(it => nextIndent + it).join(',\n')}\n${indent}]`;
       }
       
       const entries = Object.entries(value);
       const pairs = entries.map(([k, v]) => {
         if (k === '__type' || k === '__expr' || k === '__value') return null;
-        if (k.startsWith('__spread')) return this.serializeValue(v);
-        return `${k}: ${this.serializeValue(v)}`;
+        if (k.startsWith('__spread')) return this.serializeValue(v, indentLevel + 1);
+        return `${k}: ${this.serializeValue(v, indentLevel + 1)}`;
       }).filter(Boolean);
 
+      if (pairs.length === 0) {
+          return value.__type ? `${value.__type}()` : '()';
+      }
+
+      // Formatting logic: multi-line if more than 2 properties or total length > 60
+      const isShort = pairs.length <= 2 && pairs.join(', ').length < 60;
+      
       if (value.__type) {
-        return `${value.__type}(${pairs.join(', ')})`;
+        if (isShort) return `${value.__type}(${pairs.join(', ')})`;
+        return `${value.__type}(\n${pairs.map(p => nextIndent + p).join(',\n')}\n${indent})`;
       }
       
-      return `(${pairs.join(', ')})`;
+      if (isShort) return `(${pairs.join(', ')})`;
+      return `(\n${pairs.map(p => nextIndent + p).join(',\n')}\n${indent})`;
     }
     
     return String(value);
