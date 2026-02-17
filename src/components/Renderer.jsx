@@ -42,13 +42,13 @@ const getLayoutStyles = (mode) => {
       return { outline: '2px dashed red', outlineOffset: '-2px' }; // Visual error
   }
   switch (mode) {
-    case 'Top': return { display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'visible' };
-    case 'Bottom': return { display: 'flex', flexDirection: 'column-reverse', alignItems: 'center', overflow: 'visible' };
-    case 'Left': return { display: 'flex', flexDirection: 'row', alignItems: 'center', overflow: 'visible' };
+    case 'Top': return { display: 'flex', flexDirection: 'column', alignItems: 'stretch', overflow: 'visible' };
+    case 'Bottom': return { display: 'flex', flexDirection: 'column-reverse', alignItems: 'stretch', overflow: 'visible' };
+    case 'Left': return { display: 'flex', flexDirection: 'row', alignItems: 'stretch', overflow: 'visible' };
     case 'Center': return { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' };
     case 'Middle': return { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'visible' };
-    case 'Right': return { display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', overflow: 'visible' };
-    case 'TopScrolling': return { display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', overflowX: 'hidden' };
+    case 'Right': return { display: 'flex', flexDirection: 'row', alignItems: 'stretch', justifyContent: 'flex-end', overflow: 'visible' };
+    case 'TopScrolling': return { display: 'flex', flexDirection: 'column', alignItems: 'stretch', overflowY: 'auto', overflowX: 'hidden' };
     case 'LeftCenterWrap': return { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', overflow: 'visible' };
     default: return { position: 'relative', overflow: 'visible' };
   }
@@ -152,34 +152,43 @@ const resolveAnchor = (anchor, variables) => {
   return resolved;
 };
 
-const getAnchorStyles = (anchor) => {
+const getAnchorStyles = (anchor, parentLayoutMode) => {
   const styles = {};
   if (anchor.Width !== undefined) styles.width = typeof anchor.Width === 'number' ? `${anchor.Width}px` : anchor.Width;
   if (anchor.Height !== undefined) styles.height = typeof anchor.Height === 'number' ? `${anchor.Height}px` : anchor.Height;
-  if (anchor.Top !== undefined) styles.top = `${anchor.Top}px`;
-  if (anchor.Bottom !== undefined) styles.bottom = `${anchor.Bottom}px`;
-  if (anchor.Left !== undefined) styles.left = `${anchor.Left}px`;
-  if (anchor.Right !== undefined) styles.right = `${anchor.Right}px`;
+  
+  const hasPos = anchor.Top !== undefined || anchor.Bottom !== undefined || anchor.Left !== undefined || anchor.Right !== undefined;
+  const isInFlow = parentLayoutMode && parentLayoutMode !== 'None';
+  
+  const isStretchV = anchor.Top !== undefined && anchor.Bottom !== undefined;
+  const isStretchH = anchor.Left !== undefined && anchor.Right !== undefined;
 
-  if (anchor.Top !== undefined || anchor.Bottom !== undefined || anchor.Left !== undefined || anchor.Right !== undefined) {
-    styles.position = 'absolute';
+  if (hasPos) {
+    if (anchor.Top !== undefined) styles.top = `${anchor.Top}px`;
+    if (anchor.Bottom !== undefined) styles.bottom = `${anchor.Bottom}px`;
+    if (anchor.Left !== undefined) styles.left = `${anchor.Left}px`;
+    if (anchor.Right !== undefined) styles.right = `${anchor.Right}px`;
+
+    const isFullStretch = isStretchV && isStretchH;
     
-    // Hytale auto-centering logic:
-    // If vertical anchor (Top/Bottom) is present but horizontal (Left/Right) is NOT:
-    const hasHorizontal = anchor.Left !== undefined || anchor.Right !== undefined;
-    const hasVertical = anchor.Top !== undefined || anchor.Bottom !== undefined;
-    
-    // Special case: if it's just a Width/Height with no positioning, it's flow-relative.
-    // But if there's any positioning anchor, it's absolute.
-    
-    if (hasVertical && !hasHorizontal) {
-      // Horizontal centering
-      styles.left = '50%';
-      styles.transform = 'translateX(-50%)';
-    } else if (hasHorizontal && !hasVertical) {
-      // Vertical centering (less common but possible)
-      styles.top = '50%';
-      styles.transform = 'translateY(-50%)';
+    if (!isInFlow || isFullStretch) {
+      styles.position = 'absolute';
+      if (isStretchV) { styles.top = `${anchor.Top}px`; styles.bottom = `${anchor.Bottom}px`; styles.height = 'auto'; }
+      if (isStretchH) { styles.left = `${anchor.Left}px`; styles.right = `${anchor.Right}px`; styles.width = 'auto'; }
+    } else {
+      styles.position = 'relative';
+      if (isStretchV) styles.height = '100%';
+      if (isStretchH) styles.width = '100%';
+
+      // Apply single-sided anchors as margins if in flow
+      if (!isStretchV) {
+        if (anchor.Top !== undefined) styles.marginTop = `${anchor.Top}px`;
+        if (anchor.Bottom !== undefined) styles.marginBottom = `${anchor.Bottom}px`;
+      }
+      if (!isStretchH) {
+        if (anchor.Left !== undefined) styles.marginLeft = `${anchor.Left}px`;
+        if (anchor.Right !== undefined) styles.marginRight = `${anchor.Right}px`;
+      }
     }
   }
 
@@ -694,7 +703,7 @@ const CommonComponents = {
 const getElementKey = (element) => element.id || element.__uid;
 
 // --- Main Element Renderer (Recursive) ---
-export const BaseElement = ({ element, variables, selectedIds, onSelect, onUpdate, children, style = {}, className = "", errors = [], gridSettings = {} }) => {
+export const BaseElement = ({ element, variables, selectedIds, onSelect, onUpdate, children, style = {}, className = "", errors = [], gridSettings = {}, parentLayoutMode = 'None' }) => {
   const isSelected = selectedIds.includes(element.id) || selectedIds.includes(element.__uid);
   const elementErrors = errors.filter(e => e.elementId === element.id || e.elementId === element.__uid);
   const hasErrors = elementErrors.length > 0;
@@ -711,7 +720,7 @@ export const BaseElement = ({ element, variables, selectedIds, onSelect, onUpdat
   if (!isVisible) return null;
 
   const anchor = resolveAnchor(element.properties.Anchor, variables);
-  const anchorStyles = getAnchorStyles(anchor);
+  const anchorStyles = getAnchorStyles(anchor, parentLayoutMode);
 
   // Function to update this specific element's properties
   const updateThisElement = (newProps) => {
@@ -777,10 +786,10 @@ export const BaseElement = ({ element, variables, selectedIds, onSelect, onUpdat
   );
 };
 
-export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, errors = [] }) => {
+export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSelect, onUpdate, gridSettings = {}, errors = [], parentLayoutMode = 'None' }) => {
   if (!element) return null;
 
-  const renderChildren = (children) => {
+  const renderChildren = (children, newParentLayoutMode) => {
     return (children || []).map((child, index) => (
       <HytaleElement
         key={getElementKey(child) || `unnamed-${index}`}
@@ -791,6 +800,7 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
         onUpdate={onUpdate}
         gridSettings={gridSettings}
         errors={errors}
+        parentLayoutMode={newParentLayoutMode || layoutMode}
       />
     ));
   };
@@ -812,7 +822,7 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
           properties={{ ...element.properties, Anchor: {} }}
           children={element.children}
           variables={variables}
-          renderChildren={renderChildren}
+          renderChildren={(childs) => renderChildren(childs, layoutMode)}
         />
       </BaseElement>
     );
@@ -889,11 +899,25 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
     }
     case 'ProgressBar': {
       const value = resolveValue(element.properties.Value, variables) || 0;
+      const barTexture = resolveValue(element.properties.BarTexturePath, variables);
+      
+      const fixPath = (path) => {
+        if (typeof path !== 'string') return path;
+        if (path.startsWith('UI/')) return '/' + path;
+        if (path.startsWith('Textures/')) return '/' + path; // SoulHarvest local textures
+        return path;
+      };
+
+      const barPath = fixPath(barTexture);
+
       content = (
         <div style={{ width: '100%', height: '100%', backgroundColor: '#0b0f15', position: 'relative', overflow: 'hidden' }}>
           <div style={{
             width: `${Math.max(0, Math.min(1, value)) * 100}%`, height: '100%',
-            backgroundColor: '#3a7ecf',
+            backgroundColor: barPath ? 'transparent' : '#3a7ecf',
+            backgroundImage: barPath ? `url("${barPath}")` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'left center',
             transition: 'width 0.3s ease',
           }} />
         </div>
@@ -1038,6 +1062,7 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
       gridSettings={gridSettings}
       errors={errors}
       style={{ ...flexStyles, ...rootStyles }}
+      parentLayoutMode={parentLayoutMode}
     >
       {content}
     </BaseElement>
@@ -1069,7 +1094,7 @@ export const HytaleRenderer = ({ element, variables = {}, selectedIds = [], onSe
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full relative overflow-visible flex items-center justify-center p-10"
+      className="w-full h-full relative overflow-visible flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onSelect(null); }}
     >
       {/* Logical Viewport Stage */}
