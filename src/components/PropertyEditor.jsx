@@ -14,12 +14,13 @@ const KNOWN_STYLE_PRESETS = {
 // Full Hytale-documented property schemas
 const SCHEMA_DEFINITIONS = {
   'Group': {
-    'LayoutMode': { type: 'select', options: ['Top', 'Left', 'Center', 'Right', 'TopScrolling'] },
+    'LayoutMode': { type: 'select', options: ['Top', 'Bottom', 'Left', 'Center', 'Right', 'TopScrolling'] },
     'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: {} },
     'Background': { type: 'object', subkeys: ['Color', 'Alpha', 'TexturePath'], default: { Color: '#000000', Alpha: 1.0 } },
     'FlexWeight': { type: 'number', default: 1 },
     'ContentPadding': { type: 'object', subkeys: ['Full', 'Top', 'Bottom', 'Left', 'Right'], default: { Full: 0 } },
     'Visible': { type: 'boolean', default: true },
+    'ScrollbarStyle': { type: 'string', default: '' },
   },
   'Label': {
     'Text': { type: 'string', default: '' },
@@ -79,6 +80,7 @@ const SCHEMA_DEFINITIONS = {
     '@CloseButton': { type: 'boolean', default: true },
     '@ContentPadding': { type: 'object', subkeys: ['Full', 'Top', 'Bottom', 'Left', 'Right'], default: { Full: 0 } },
     'Anchor': { type: 'object', subkeys: ['Width', 'Height', 'Top', 'Bottom', 'Left', 'Right'], default: { Width: 400, Height: 300 } },
+    'ScrollbarStyle': { type: 'string', default: '' },
   },
   '$C.@CheckBoxWithLabel': {
     '@Text': { type: 'string', default: '' },

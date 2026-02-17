@@ -84,13 +84,25 @@ const resolveBackground = (background, variables) => {
   const bg = resolveValue(background, variables);
   if (!bg) return {};
   
+  const fixPath = (path) => {
+    if (typeof path !== 'string') return path;
+    if (path.startsWith('UI/')) return '/' + path;
+    return path;
+  };
+
   // Direct hex color string: #141821 or #000000(0.55)
   if (typeof bg === 'string') {
     if (bg.startsWith('#')) {
       return { backgroundColor: parseHexColor(bg) };
     }
     // Direct image path string: "image.png"
-    return { backgroundColor: '#2a3040', backgroundNote: bg }; // placeholder
+    const path = fixPath(bg);
+    return { 
+      backgroundImage: `url("${path}")`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    };
   }
   
   // Object form: { Color: "#hex" } or { TexturePath: "..." }
@@ -100,8 +112,11 @@ const resolveBackground = (background, variables) => {
       styles.backgroundColor = parseHexColor(bg.Color) || bg.Color;
     }
     if (bg.TexturePath) {
-      // Show as subtle placeholder — we can't load real textures
-      if (!styles.backgroundColor) styles.backgroundColor = '#1e2436';
+      const path = fixPath(resolveValue(bg.TexturePath, variables));
+      styles.backgroundImage = `url("${path}")`;
+      styles.backgroundSize = 'contain';
+      styles.backgroundPosition = 'center';
+      styles.backgroundRepeat = 'no-repeat';
     }
     return styles;
   }
@@ -915,16 +930,35 @@ export const HytaleElement = ({ element, variables = {}, selectedIds = [], onSel
       );
       break;
     }
+    case 'Image':
     case 'Sprite': {
+      const texPath = resolveValue(element.properties.TexturePath, variables);
+      const fixPath = (path) => {
+        if (typeof path !== 'string') return path;
+        if (path.startsWith('UI/')) return '/' + path;
+        return path;
+      };
+      
+      const path = fixPath(texPath);
       content = (
         <div style={{
           width: '100%', height: '100%',
-          backgroundColor: '#1a1e2e',
-          border: '1px dashed rgba(255,255,255,0.2)',
+          backgroundImage: path ? `url("${path}")` : 'none',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 9, color: HYTALE_COLORS.textMuted,
         }}>
-          SPRITE
+          {!path && (
+            <div style={{
+              fontSize: 9, color: HYTALE_COLORS.textMuted,
+              border: '1px dashed rgba(255,255,255,0.2)',
+              width: '100%', height: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {element.type.toUpperCase()}
+            </div>
+          )}
         </div>
       );
       break;

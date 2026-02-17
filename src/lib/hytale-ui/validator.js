@@ -23,7 +23,7 @@ const COMMON_COMPONENTS = [
 ];
 
 const GLOBAL_PROPERTIES = [
-  'Anchor', 'Visible', 'Padding', 'Margin', 'FlexWeight', 'Background', 'LayoutMode', 'ContentPadding', 'EventData'
+  'Anchor', 'Visible', 'Padding', 'Margin', 'FlexWeight', 'Background', 'LayoutMode', 'ContentPadding', 'EventData', 'ScrollbarStyle'
 ];
 
 const ELEMENT_SPECIFIC_PROPERTIES = {

@@ -10,6 +10,7 @@ import { HytaleUIParser, HytaleUISerializer } from '../lib/hytale-ui/parser';
 export const SourceEditor = ({ code, offsets, selectedIds, onChange, onApply }) => {
     const textareaRef = useRef(null);
     const preRef = useRef(null);
+    const gutterRef = useRef(null);
     const [isWrapped, setIsWrapped] = useState(false);
 
     // Get current selection offset if any
@@ -98,9 +99,10 @@ export const SourceEditor = ({ code, offsets, selectedIds, onChange, onApply }) 
 
     // Sync scrolling
     const handleScroll = () => {
-        if (textareaRef.current && preRef.current) {
+        if (textareaRef.current && preRef.current && gutterRef.current) {
             preRef.current.scrollTop = textareaRef.current.scrollTop;
             preRef.current.scrollLeft = textareaRef.current.scrollLeft;
+            gutterRef.current.scrollTop = textareaRef.current.scrollTop;
         }
     };
 
@@ -135,7 +137,8 @@ export const SourceEditor = ({ code, offsets, selectedIds, onChange, onApply }) 
                 
                 {/* 0. Line Numbers Gutter */}
                 <div 
-                    className="w-10 bg-black/20 border-r border-white/5 flex flex-col items-end px-2 pt-3 select-none text-hytale-muted/30 font-mono pointer-events-none"
+                    ref={gutterRef}
+                    className="w-10 bg-black/20 border-r border-white/5 flex flex-col items-end px-2 pt-3 select-none text-hytale-muted/30 font-mono pointer-events-none overflow-hidden"
                     style={{ lineHeight: `${LINE_HEIGHT}px` }}
                 >
                     {Array.from({ length: lineNumbers }).map((_, i) => (
